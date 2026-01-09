@@ -1,94 +1,66 @@
 const BASE_URL = "https://aura-iyxa.onrender.com";
 
-let language = navigator.language.startsWith("en") ? "en" :
-               navigator.language.startsWith("ht") ? "ht" : "es";
-
-const translations = {
-    es: {
-        "Bienvenido": "Bienvenido a Aura! Obtén estimados de salud rápidos y confiables.",
-        "title": "Aura - Estimados de Salud",
-        "estado": "Estado (ej: FL)",
-        "zip": "Código ZIP",
-        "code": "Código de procedimiento",
-        "plan": ["Básico", "Prueba", "Premium"],
-        "button": "Obtener Estimado",
-        "result_error": "Error: "
-    },
-    en: {
-        "Bienvenido": "Welcome to Aura! Get quick and reliable health estimates.",
-        "title": "Aura - Health Estimates",
-        "estado": "State (ex: FL)",
-        "zip": "ZIP Code",
-        "code": "Procedure Code",
-        "plan": ["Basic","Trial","Premium"],
-        "button": "Get Estimate",
-        "result_error": "Error: "
-    },
-    ht: {
-        "Bienvenido": "Byenveni nan Aura! Jwenn evalyasyon sante rapid ak serye.",
-        "title": "Aura - Evalyasyon Sante",
-        "estado": "Eta (eg: FL)",
-        "zip": "Kòd ZIP",
-        "code": "Kòd Pwosedi",
-        "plan": ["Debaz","Esè","Premium"],
-        "button": "Jwenn Evalyasyon",
-        "result_error": "Erè: "
-    }
+const priceIds = {
+    "TRIAL": "price_1SnYkMBOA5mT4t0P2Ra3NpYy",
+    "BASIC": "price_1SnYuABOA5mT4t0Pv706amhC",
+    "PREMIUM": "price_1SnZ0eBOA5mT4t0Phwt58d4k"
 };
 
-// Cambiar idioma manualmente
-function setLanguage(lang) {
-    language = lang;
-    updateText();
-}
+let selectedPlan = "TRIAL";
 
-// Actualiza textos según idioma
-function updateText() {
-    const t = translations[language];
-    document.getElementById("title").innerText = t.title;
-    document.getElementById("state").placeholder = t.estado;
-    document.getElementById("zip").placeholder = t.zip;
-    document.getElementById("code").placeholder = t.code;
-    document.getElementById("plan").options[0].text = t.plan[0];
-    document.getElementById("plan").options[1].text = t.plan[1];
-    document.getElementById("plan").options[2].text = t.plan[2];
-}
+// Cambio de idioma
+document.getElementById("langSelector").addEventListener("change", (e) => {
+    const lang = e.target.value;
+    const title = document.getElementById("title");
+    const ad = document.getElementById("autopropaganda");
 
-// Llamada al backend para obtener estimado
-async function getEstimate() {
-    const state = document.getElementById("state").value;
-    const zip = document.getElementById("zip").value;
-    const code = document.getElementById("code").value;
-    const plan = document.getElementById("plan").value;
-
-    if(!state || !zip || !code){
-        alert("Completa todos los campos!");
-        return;
+    if (lang === "es") {
+        title.innerText = "Bienvenido a SmartCargo";
+        ad.innerText = "Protege tu dinero y tu carga 🚛";
+    } else if (lang === "en") {
+        title.innerText = "Welcome to SmartCargo";
+        ad.innerText = "Protect your money and cargo 🚛";
+    } else {
+        title.innerText = "Byenveni nan SmartCargo";
+        ad.innerText = "Pwoteje lajan ou ak chaj ou 🚛";
     }
+});
 
-    const formData = new FormData();
-    formData.append("state", state);
-    formData.append("zip", zip);
-    formData.append("code", code);
-    formData.append("plan_type", plan);
+// Selección de plan
+document.querySelectorAll(".planBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        selectedPlan = btn.dataset.plan;
+        alert("Plan seleccionado: " + selectedPlan);
+    });
+});
 
+// Botón de donación / compra plan
+document.getElementById("donateBtn").addEventListener("click", async () => {
     try {
-        const res = await fetch(`${BASE_URL}/estimate`, {
-            method: "POST",
-            body: formData
-        });
-        const data = await res.json();
-        const resultDiv = document.getElementById("result");
-        resultDiv.style.display = "block";
-        if(data.error){
-            resultDiv.innerText = translations[language].result_error + data.message;
-        } else {
-            resultDiv.innerText = data.estimate;
+        const priceId = priceIds[selectedPlan];
+        if (!priceId) {
+            alert("Plan no válido");
+            return;
         }
-    } catch(e){
-        alert("Error al obtener estimado. Intenta más tarde.");
-    }
-}
 
-// Inicializa textos al cargar
-updateText();
+        // Llamamos a nuestro endpoint en main.py que crea la sesión de Stripe
+        const data = new FormData();
+        data.append("price_id", priceId);
+
+        const resp = await fetch(`${BASE_URL}/create-checkout-session`, {
+            method: "POST",
+            body: data
+        });
+
+        const session = await resp.json();
+
+        if (session.url) {
+            window.location.href = session.url; // Redirige al checkout
+        } else {
+            alert("Error al crear sesión de pago.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Ocurrió un error en el pago.");
+    }
+});
