@@ -3,284 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura - Transparencia de Salud en USA</title>
+    <title>Aura - Estimados de Salud Transparentes</title>
     <style>
-        :root {
-            --aura-blue: #00d4ff;
-            --aura-dark: #0a0a0a;
-            --aura-card: #111111;
-        }
-
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background-color: #000; 
-            color: #fff; 
-            margin: 0; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-
-        .main-container { 
-            max-width: 850px; 
-            margin: auto; 
-            background: var(--aura-dark); 
-            border: 2px solid var(--aura-blue); 
-            border-radius: 30px; 
-            padding: 40px; 
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); 
-        }
-
-        /* Autopropaganda Azul Neón Animada */
-        .marquee-container { 
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: #fff; text-align: center; padding: 10px; }
+        .container { max-width: 900px; margin: auto; background: #080808; border: 2px solid #00d4ff; border-radius: 35px; padding: 40px; box-shadow: 0 0 40px rgba(0, 212, 255, 0.3); }
+        
+        /* Propaganda Azul Neón con Velocidad Reducida para Lectura Fácil */
+        .marquee-box { 
             background: #001a33; 
-            border: 1px solid var(--aura-blue); 
+            border: 1px solid #00d4ff; 
             border-radius: 15px; 
-            margin: 25px 0; 
+            margin: 20px 0; 
             overflow: hidden; 
-            padding: 15px; 
+            padding: 20px; 
         }
-
+        
         .marquee-text { 
             display: inline-block; 
             white-space: nowrap; 
-            color: var(--aura-blue); 
-            font-size: 1.5rem; 
-            font-weight: bold; 
-            text-shadow: 0 0 10px var(--aura-blue); 
-            animation: scroll-text 20s linear infinite; 
+            color: #00d4ff; 
+            font-size: 1.7rem; /* Un poco más grande */
+            font-weight: 800; 
+            /* Aumentado a 45 segundos para que sea fácil de leer por jóvenes y mayores */
+            animation: scroll 45s linear infinite; 
+            text-shadow: 0 0 10px #00d4ff; 
         }
 
-        @keyframes scroll-text {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+        @keyframes scroll { 
+            0% { transform: translateX(100%); } 
+            100% { transform: translateX(-100%); } 
         }
 
-        /* Botones de Traducción */
-        .lang-selector { margin-bottom: 25px; }
-        .btn-lang { 
-            background: transparent; 
-            color: var(--aura-blue); 
-            border: 1px solid var(--aura-blue); 
-            padding: 8px 15px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            margin: 0 5px; 
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        .btn-lang:hover { background: var(--aura-blue); color: #000; }
+        .btn-action { background: #00d4ff; color: #000; border: none; padding: 15px 35px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: 0.4s; }
+        .btn-action:hover { background: #fff; box-shadow: 0 0 25px #00d4ff; transform: translateY(-2px); }
 
-        /* Planes de Acceso */
-        .plans-grid { 
-            display: flex; 
-            gap: 20px; 
-            justify-content: center; 
-            flex-wrap: wrap; 
-            margin: 40px 0; 
-        }
-
-        .plan-card { 
-            background: var(--aura-card); 
-            border: 1px solid #333; 
-            border-radius: 20px; 
-            padding: 25px; 
-            width: 220px; 
-            transition: 0.3s; 
-        }
-        .plan-card:hover { border-color: var(--aura-blue); transform: scale(1.03); }
-        .plan-card h3 { color: var(--aura-blue); margin-top: 0; }
-        .price { font-size: 2rem; font-weight: bold; margin: 15px 0; }
-
-        .btn-buy { 
-            background: var(--aura-blue); 
-            color: #000; 
-            border: none; 
-            padding: 12px 25px; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            width: 100%; 
-            font-size: 1rem;
-        }
-
-        /* Buscador */
-        .search-section { 
-            background: var(--aura-card); 
-            padding: 30px; 
-            border-radius: 20px; 
-            border: 1px solid var(--aura-blue); 
-            margin-top: 40px;
-        }
-
-        input { 
-            padding: 15px; 
-            border-radius: 10px; 
-            border: 1px solid var(--aura-blue); 
-            background: #000; 
-            color: #fff; 
-            width: 80%; 
-            max-width: 300px; 
-            margin: 10px; 
-            font-size: 1rem;
-        }
-
-        /* Blindaje Legal */
-        .legal-shield { 
-            margin-top: 50px; 
-            padding: 20px; 
-            font-size: 0.85rem; 
-            color: #888; 
-            border-top: 1px solid #222; 
-            text-align: justify;
-        }
+        input, select { padding: 16px; border-radius: 12px; border: 1px solid #00d4ff; background: #000; color: #fff; margin: 8px; width: 44%; font-size: 1.1rem; outline: none; }
+        
+        .result-panel { background: #111; padding: 35px; border-radius: 25px; border: 1px solid #00d4ff; margin-top: 35px; min-height: 120px; }
+        .mission-panel { border: 2px dashed #00d4ff; padding: 30px; margin-top: 45px; border-radius: 25px; background: #001222; text-align: justify; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <h1 style="color: var(--aura-blue); font-size: 4rem; margin: 0; letter-spacing: 8px;">AURA</h1>
-    <p style="color: #555; margin-bottom: 20px;">By May Roga LLC</p>
+<div class="container">
+    <h1 style="color: #00d4ff; font-size: 4.5rem; margin: 0; letter-spacing: 12px; font-weight: 900;">AURA</h1>
+    <p style="color: #555; font-size: 1.2rem; font-weight: bold;">By May Roga LLC | Healthcare Price Guard</p>
 
-    <div class="lang-selector">
-        <button class="btn-lang" onclick="changeLang('es')">Español</button>
-        <button class="btn-lang" onclick="changeLang('en')">English</button>
-        <button class="btn-lang" onclick="changeLang('ht')">Kreyòl</button>
-    </div>
-
-    <div class="marquee-container">
-        <div class="marquee-text" id="marquee">
-            💎 NO SOMOS SEGURO: SOMOS TRANSPARENCIA • 🏥 CONOCE EL PRECIO ANTES DE PAGAR • 🦷 MÉDICOS Y DENTISTAS EN LOS 50 ESTADOS • 📉 EVITA ENGAÑOS CON CÓDIGOS OFICIALES • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR
+    <div class="marquee-box">
+        <div class="marquee-text">
+            🛡️ COMPARA PRECIOS Y ELIGE EL MÁS BARATO • 🏥 ESTIMADOS REALES EN LOS 50 ESTADOS • 🦷 NO MÁS FACTURAS SORPRESA • 📊 DUAL IA ANALIZANDO TU BOLSILLO • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR
         </div>
     </div>
 
-    <div class="plans-grid">
-        <div class="plan-card">
-            <h3 id="txt-p1">Rápido</h3>
-            <div class="price">$5.99</div>
-            <p id="txt-t1">7 Minutos de acceso</p>
-            <button class="btn-buy" onclick="handlePayment('rapido')">ELEGIR</button>
-        </div>
-        <div class="plan-card" style="border-color: var(--aura-blue);">
-            <h3 id="txt-p2">Standard</h3>
-            <div class="price">$9.99</div>
-            <p id="txt-t2">15 Minutos de acceso</p>
-            <button class="btn-buy" onclick="handlePayment('standard')">ELEGIR</button>
-        </div>
-        <div class="plan-card">
-            <h3 id="txt-p3">Special</h3>
-            <div class="price">$19.99/mes</h3>
-            <p id="txt-t3">35min (Día 1-2) / 6min (Resto)</p>
-            <button class="btn-buy" onclick="handlePayment('special')">SUSCRIBIRSE</button>
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px;">
+        <div style="background:#111; padding:25px; border-radius:20px; border: 1px solid #333; width: 220px;">
+            <h3 style="color:#00d4ff">Plan Standard</h3>
+            <p style="font-size: 2rem; font-weight: bold;">$9.99</p>
+            <p>Acceso Experto 15 min</p>
+            <button class="btn-action" style="width:100%" onclick="pay('standard')">ACCEDER YA</button>
         </div>
     </div>
 
-    <div class="search-section">
-        <h3 id="txt-search-head" style="color: var(--aura-blue);">SABE EL COSTO ANTES DE IR AL MÉDICO</h3>
-        <input type="text" id="zip_input" placeholder="ZIP Code">
-        <input type="text" id="code_input" placeholder="Código (Ej: D1110)">
-        <br>
-        <button class="btn-buy" style="width: auto; padding: 15px 50px; margin-top: 15px;" onclick="getEstimate()" id="txt-btn-search">BUSCAR ESTIMADO</button>
-        <div id="results" style="margin-top: 30px; font-size: 1.3rem; font-weight: bold; color: var(--aura-blue);"></div>
+    <div class="result-panel">
+        <h2 style="color:#00d4ff; margin-top: 0;">SISTEMA DE ESTIMADOS DE SALUD</h2>
+        <input type="text" id="zip" placeholder="ZIP Code (Ej: 33101)">
+        <input type="text" id="consulta" placeholder="¿Qué necesitas? (Ej: Limpieza, MRI, Cirugía)">
+        <select id="facility">
+            <option value="office">Atención en Oficina / Privado</option>
+            <option value="hospital">Atención en Hospital / Centro Ambulatorio</option>
+        </select>
+        <br><br>
+        <button onclick="getEstimado()" class="btn-action" style="width: 350px;">OBTENER ESTIMADO AHORA</button>
+        <div id="res" style="margin-top: 35px; font-size: 1.6rem; color: #00d4ff; font-weight: bold; line-height: 1.6;"></div>
     </div>
 
-    <div class="legal-shield" id="txt-legal">
-        <strong>BLINDAJE LEGAL:</strong> Aura by May Roga LLC no es una agencia médica ni un seguro. Somos una herramienta de transparencia que utiliza códigos públicos oficiales para evitar que seas víctima de sobrecargos o falta de información. Al usar nuestra app, apoyas una cadena de favores comprando medios de trabajo para quienes lo necesitan.
+    <div class="mission-panel">
+        <h3 style="color:#00d4ff; text-align: center;">CADENA DE FAVORES: AYUDA CON MEDIOS DE TRABAJO 🤝</h3>
+        <p style="color: #aaa; line-height: 1.8; font-size: 1.05rem;">
+            Aura no solo protege tu bolsillo. Cada dólar que ingresa se utiliza para mantener este sistema de transparencia y para una causa mayor: **comprar medios de trabajo para personas necesitadas**. No creemos en la caridad pasiva, sino en dar herramientas para que la gente prospere por sí misma. Al usar Aura, te unes a una cadena donde el que progresa, ayuda al siguiente.
+        </p>
     </div>
+
+    <p style="font-size: 0.9rem; color: #444; margin-top: 50px; font-style: italic;">
+        "La bendición de saber el precio antes de pagar". Aura by May Roga LLC: Medicina y Odontología en toda su amplitud.
+    </p>
 </div>
 
 <script>
-    const SERVER_URL = "https://aura-iyxa.onrender.com";
-    
-    const translations = {
-        es: {
-            marquee: "💎 NO SOMOS SEGURO: SOMOS TRANSPARENCIA • 🏥 CONOCE EL PRECIO ANTES DE PAGAR • 🦷 MÉDICOS Y DENTISTAS EN LOS 50 ESTADOS • 📉 EVITA ENGAÑOS CON CÓDIGOS OFICIALES • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR",
-            p1: "Rápido", p2: "Standard", p3: "Special",
-            t1: "7 Minutos de acceso", t2: "15 Minutos de acceso", t3: "35min (Día 1-2) / 6min (Resto)",
-            searchHead: "SABE EL COSTO ANTES DE IR AL MÉDICO",
-            btnSearch: "BUSCAR ESTIMADO",
-            legal: "<strong>BLINDAJE LEGAL:</strong> Aura by May Roga LLC no es una agencia médica ni un seguro. Somos una herramienta de transparencia para evitar engaños."
-        },
-        en: {
-            marquee: "💎 NOT INSURANCE: WE ARE TRANSPARENCY • 🏥 KNOW THE PRICE BEFORE YOU PAY • 🦷 DOCTORS & DENTISTS IN ALL 50 STATES • 📉 AVOID FRAUD WITH OFFICIAL CODES • 🤝 YOUR SEARCH HELPS OTHERS WORK",
-            p1: "Quick", p2: "Standard", p3: "Special",
-            t1: "7 Minutes of access", t2: "15 Minutes of access", t3: "35min (Day 1-2) / 6min (Rest)",
-            searchHead: "KNOW THE COST BEFORE YOU GO",
-            btnSearch: "SEARCH ESTIMATE",
-            legal: "<strong>LEGAL SHIELD:</strong> Aura by May Roga LLC is not a medical or insurance agency. We are a transparency tool to avoid fraud."
-        },
-        ht: {
-            marquee: "💎 NOU PA ASIRANS: NOU SE TRANSPARANS • 🏥 KONNEN PRI A ANVAN OU PEYE • 🦷 DOKTÈ AK DANTIS NAN TOUT 50 ETA • 📉 EVITE FRAID AK KÒD OFISYÈL • 🤝 CHACHE OU EDE LÒT TRAVAY",
-            p1: "Rapido", p2: "Standard", p3: "Special",
-            t1: "7 Minit aksè", t2: "15 Minit aksè", t3: "35min (Jou 1-2) / 6min (Rès)",
-            searchHead: "KONNEN PRI A ANVAN OU ALE",
-            btnSearch: "CHACHE ESTIMASYON",
-            legal: "<strong>BLENDAJ LEGAL:</strong> Aura by May Roga LLC se pa yon ajans medikal oswa asirans. Nou se transparans pou evite manti."
-        }
-    };
+    const SERVER = "https://aura-iyxa.onrender.com";
 
-    function changeLang(lang) {
-        const t = translations[lang];
-        document.getElementById('marquee').innerText = t.marquee;
-        document.getElementById('txt-p1').innerText = t.p1;
-        document.getElementById('txt-p2').innerText = t.p2;
-        document.getElementById('txt-p3').innerText = t.p3;
-        document.getElementById('txt-t1').innerText = t.t1;
-        document.getElementById('txt-t2').innerText = t.t2;
-        document.getElementById('txt-t3').innerText = t.t3;
-        document.getElementById('txt-search-head').innerText = t.searchHead;
-        document.getElementById('txt-btn-search').innerText = t.btnSearch;
-        document.getElementById('txt-legal').innerHTML = t.legal;
+    async function pay(plan) {
+        const fd = new FormData(); fd.append("plan", plan);
+        const res = await fetch(`${SERVER}/create-checkout-session`, { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
     }
 
-    async function handlePayment(plan) {
-        const formData = new FormData();
-        formData.append("plan", plan);
+    async function getEstimado() {
+        const zip = document.getElementById("zip").value;
+        const consulta = document.getElementById("consulta").value;
+        const facility = document.getElementById("facility").value;
+        if(!zip || !consulta) return alert("Por favor ingresa todos los datos.");
 
-        try {
-            const response = await fetch(`${SERVER_URL}/create-checkout-session`, {
-                method: "POST",
-                body: formData
-            });
-            const data = await response.json();
-            if (data.url) window.location.href = data.url;
-            else alert("Error al conectar con la pasarela de pago.");
-        } catch (e) {
-            alert("Error de conexión con el servidor.");
-        }
-    }
-
-    async function getEstimate() {
-        const zip = document.getElementById("zip_input").value;
-        const code = document.getElementById("code_input").value;
-        if (!zip || !code) return alert("Por favor complete los campos.");
-
-        const formData = new FormData();
-        formData.append("zip_code", zip);
-        formData.append("code", code);
-        formData.append("plan_type", "standard");
-
-        document.getElementById("results").innerText = "Consultando base de datos...";
-
-        try {
-            const response = await fetch(`${SERVER_URL}/estimado`, {
-                method: "POST",
-                body: formData
-            });
-            const data = await response.json();
-            if (data.rango) {
-                document.getElementById("results").innerHTML = `
-                    <div style="color:#fff">${data.procedimiento}</div>
-                    <div style="font-size:2.5rem">${data.rango}</div>
-                    <div style="font-size:0.9rem; color:#555">${data.ubicacion}</div>
-                `;
-            } else {
-                document.getElementById("results").innerText = data.error || "No encontrado.";
-            }
-        } catch (e) {
-            document.getElementById("results").innerText = "Error en la búsqueda.";
-        }
+        document.getElementById("res").innerText = "Aura está analizando los precios del mercado...";
+        
+        const fd = new FormData();
+        fd.append("zip_code", zip); fd.append("consulta", consulta); 
+        fd.append("facility", facility); fd.append("plan_type", "standard");
+        
+        const res = await fetch(`${SERVER}/estimado`, { method: "POST", body: fd });
+        const data = await res.json();
+        
+        document.getElementById("res").innerHTML = `
+            <div style="color:#fff; font-size:1.1rem; margin-bottom:10px;">ESTIMADO ENCONTRADO:</div>
+            ${data.estimado}<br>
+            <small style="color:#666; font-size:0.9rem;">Fuente: ${data.fuente}</small>
+        `;
     }
 </script>
-
 </body>
 </html>
