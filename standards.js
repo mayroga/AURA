@@ -1,22 +1,91 @@
-// ==============================
-// CÓDIGOS Y LEGALIDAD
-// ==============================
+/**
+ * STANDARDS & LEGAL GUARDRAILS
+ * Este archivo protege legalmente la app
+ * NO tocar sin asesoría
+ */
 
-// Estados permitidos para estimados y marketplace
+// ===============================
+// ESTADOS DONDE ES PERMITIDO
+// (Estimaciones de costos basadas en datos públicos)
+// ===============================
 export const ALLOWED_STATES = [
-  "FL","TX","CA","NY","AZ","NV","GA","NC","WA","IL"
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
 ];
 
-// Sistemas de códigos válidos
-export const CODE_SYSTEMS = {
-  MEDICAL: ["CPT","HCPCS","ICD-10"],
-  DENTAL: ["CDT"]
+// ===============================
+// CÓDIGOS ACEPTADOS
+// ===============================
+export const CODE_TYPES = {
+  MEDICAL: ["CPT", "HCPCS"],
+  DENTAL: ["CDT"],
+  GOVERNMENT: ["DRG"]
 };
 
-// DISCLAIMER GENERAL
-export const DISCLAIMER =
-  "This platform provides cost estimates only. It does NOT provide medical advice, insurance advice, billing, or price guarantees. Estimates are based on public data and historical averages. Always confirm directly with provider.";
+// ===============================
+// DISCLAIMER CORTO (pantalla resultados)
+// ===============================
+export const DISCLAIMER_SHORT = `
+Estimates only. Not medical advice. 
+No price guarantees. 
+Data based on public fee schedules.
+`;
 
-// VERSIÓN CORTA PARA PANTALLA DE RESULTADOS
-export const DISCLAIMER_SHORT =
-  "Estimates only. Not a bill or guarantee.";
+// ===============================
+// DISCLAIMER COMPLETO
+// ===============================
+export const DISCLAIMER_FULL = `
+This application provides healthcare and dental cost estimates only.
+
+It does NOT:
+- Provide medical, dental, or insurance advice
+- Diagnose conditions
+- Recommend treatments
+- Guarantee prices or coverage
+- Act as a healthcare provider or insurer
+
+All estimates are informational and based on publicly available data,
+historical ranges, geographic factors, and standard coding systems
+(CPT, CDT, HCPCS, DRG).
+
+Actual prices may vary significantly depending on provider, facility,
+insurance contracts, and individual circumstances.
+
+Users are solely responsible for contacting providers directly to
+confirm prices, coverage, and services.
+
+This platform does not require medical licensure and does not engage
+in regulated medical activities.
+`;
+
+// ===============================
+// CHECKBOX LEGAL (APP MÓVIL)
+// ===============================
+export const CHECKBOX_TEXT = `
+I understand this app provides cost estimates only.
+I acknowledge no medical or financial advice is given.
+I agree prices are not guaranteed.
+`;
+
+// ===============================
+// REGLAS DE NEGOCIO (BLINDAJE)
+// ===============================
+export const BUSINESS_RULES = {
+  NO_DIAGNOSIS: true,
+  NO_BILLING: true,
+  NO_NEGOTIATION: true,
+  NO_MEDICAL_ADVICE: true,
+  ESTIMATES_ONLY: true
+};
+
+// ===============================
+// VISIBILIDAD LEGAL OBLIGATORIA
+// ===============================
+export const LEGAL_VISIBILITY = {
+  SHOW_ON_FIRST_USE: true,
+  SHOW_ON_RESULTS: true,
+  REQUIRE_ACCEPTANCE: true
+};
