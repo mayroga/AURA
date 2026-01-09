@@ -1,34 +1,21 @@
 # main.py
 import os
 import time
-from fastapi import FastAPI, HTTPException, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
-from datetime import datetime
 import stripe
 import httpx
 import openai
 import asyncio
+from fastapi import FastAPI, Form, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from typing import Optional
 
-# -------------------------------
-# VARIABLES DE ENTORNO
-# -------------------------------
-STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
-DATABASE_URI = os.environ.get("DATABASE_URI")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+load_dotenv()
 
-# -------------------------------
-# CONFIGURACIÓN
-# -------------------------------
-stripe.api_key = STRIPE_SECRET_KEY
-app = FastAPI(title="Asesor de Costos AURA by May Roga LLC")
+app = FastAPI()
 
+# Permitir CORS para frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,164 +23,154 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------------------
-# DB SIMPLIFICADA
-# -------------------------------
-cost_estimates_db = {}
-usage_tokens_db = {}
+# ========================
+# CONFIGURACIONES
+# ========================
+BASE_URL = os.getenv("BASE_URL", "https://aura-iyxa.onrender.com")
 
-# -------------------------------
-# PLANES Y TIEMPO DE USO
-# -------------------------------
-PLANES = {
-    "trial": {"precio": 1.99, "tiempo_seg": 40, "consultas": 1},
-    "basic": {"precio": 7.99, "tiempo_seg": 2400, "consultas": 5},       # 40 min
-    "special": {"precio": 14.99, "tiempo_seg": 3600, "consultas": 10},   # 1 hora
-    "subscription": {"precio": 8.99, "tiempo_seg": 3600, "consultas": 10},  # 1 hora/día
-    "loyalty": {"precio": 0.99, "tiempo_seg": 2400, "consultas": 5},
+# Admin para acceso gratuito y pruebas
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234")
+
+# Stripe
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_BASIC_PLAN_ID = os.getenv("STRIPE_BASIC_PLAN_ID", "price_basic")
+STRIPE_PREMIUM_PLAN_ID = os.getenv("STRIPE_PREMIUM_PLAN_ID", "price_premium")
+STRIPE_TRIAL_PLAN_ID = os.getenv("STRIPE_TRIAL_PLAN_ID", "price_trial")
+
+# IA
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Puedes usar otra variable si quieres
+
+# Tiempo de uso por plan (en segundos)
+PLAN_USAGE = {
+    "TRIAL": 40,       # 40 segundos de prueba
+    "BASIC": 3600,     # 1 hora
+    "PREMIUM": 3600    # 1 hora por pago premium
 }
 
-# -------------------------------
-# PRICE_ID DE STRIPE (CAMBIAR AQUÍ)
-# -------------------------------
-PRICE_IDS = {
-    "trial": "price_XXXXXXXXXXXX",
-    "basic": "price_XXXXXXXXXXXX",
-    "special": "price_XXXXXXXXXXXX",
-    "subscription": "price_XXXXXXXXXXXX",
-    "loyalty": "price_XXXXXXXXXXXX",
-}
+# Historial de uso por usuario (temporal, reinicia al reiniciar app)
+USER_USAGE = {}  # {"user_id": timestamp_final_uso}
 
-# -------------------------------
-# DETECCIÓN DE IDIOMA
-# -------------------------------
-def detectar_idioma(texto):
-    texto = texto.lower()
-    if any(word in texto for word in ["hello","hi","thanks"]):
-        return "en"
-    elif any(word in texto for word in ["bonjou","mèsi"]):
-        return "creole"
-    else:
-        return "es"
+# ========================
+# SERVIR FRONTEND
+# ========================
+@app.get("/")
+def root():
+    """Sirve el index.html"""
+    return FileResponse("index.html")
 
-# -------------------------------
-# FUNCIÓN PARA LLAMAR A IA
-# -------------------------------
-async def consulta_ia(prompt):
-    # Intentar OpenAI
+
+# ========================
+# FUNCIONES AUXILIARES IA
+# ========================
+async def query_openai(prompt: str) -> str:
+    """Consulta OpenAI con timeout"""
     try:
-        openai.api_key = OPENAI_API_KEY
-        resp = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role":"user","content":prompt}],
-            temperature=0.7,
-            timeout=50
-        )
-        return resp.choices[0].message.content
-    except Exception:
-        # Fallback Gemini
         async with httpx.AsyncClient(timeout=50) as client:
-            data = {"input": prompt}
+            headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+            json_data = {"model": "gpt-3.5-turbo", "messages": [{"role":"user","content":prompt}]}
+            resp = await client.post("https://api.openai.com/v1/chat/completions", headers=headers, json=json_data)
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return None
+
+async def query_gemini(prompt: str) -> str:
+    """Consulta Gemini con timeout"""
+    try:
+        async with httpx.AsyncClient(timeout=50) as client:
             headers = {"Authorization": f"Bearer {GEMINI_API_KEY}"}
-            resp = await client.post("https://api.gemini.ai/generate", json=data, headers=headers)
-            return resp.json().get("output", "No se pudo generar estimado")
+            json_data = {"prompt": prompt}
+            resp = await client.post("https://api.gemini.com/v1/completions", headers=headers, json=json_data)
+            data = resp.json()
+            return data.get("text")
+    except Exception as e:
+        return None
 
-# -------------------------------
-# CONTROL DE USO POR PLAN
-# -------------------------------
-def validar_acceso(usuario_id, plan):
-    if usuario_id not in usage_tokens_db:
-        usage_tokens_db[usuario_id] = {}
-    if plan not in usage_tokens_db[usuario_id]:
-        usage_tokens_db[usuario_id][plan] = {"inicio": datetime.utcnow(), "consultas": 0}
+async def get_cost_estimate(prompt: str) -> str:
+    """Usa OpenAI primero, si falla usa Gemini"""
+    result = await query_openai(prompt)
+    if not result:
+        result = await query_gemini(prompt)
+    if not result:
+        result = "No se pudo generar el estimado en este momento. Intenta más tarde."
+    return result
 
-    datos = usage_tokens_db[usuario_id][plan]
-    plan_info = PLANES[plan]
-    tiempo_transcurrido = (datetime.utcnow() - datos["inicio"]).total_seconds()
 
-    if tiempo_transcurrido > plan_info["tiempo_seg"] or datos["consultas"] >= plan_info["consultas"]:
-        raise HTTPException(status_code=403, detail="Tiempo de uso o consultas agotadas")
-    datos["consultas"] += 1
-    return True
+# ========================
+# ENDPOINTS
+# ========================
+@app.post("/estimate")
+async def estimate(
+    state: str = Form(...),
+    zip: str = Form(...),
+    code: str = Form(...),
+    insured: bool = Form(...),
+    plan_type: str = Form("BASIC"),
+    username: Optional[str] = Form(None),
+    password: Optional[str] = Form(None)
+):
+    """Endpoint principal de estimado"""
 
-# -------------------------------
-# ENDPOINT ADMIN (gratis total)
-# -------------------------------
-@app.post("/admin/estimado")
-async def admin_estimado(usuario: str = Form(...), clave: str = Form(...), prompt: str = Form(...)):
-    if usuario != ADMIN_USERNAME or clave != ADMIN_PASSWORD:
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    respuesta = await consulta_ia(prompt)
-    return JSONResponse({"estimado": respuesta})
+    # Permite admin gratuito
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        pass
+    else:
+        # Control de tiempo de uso por plan
+        user_key = username or f"{state}_{zip}_{code}"
+        now = time.time()
+        final_time = USER_USAGE.get(user_key, now)
+        usage_time = PLAN_USAGE.get(plan_type.upper(), 40)
+        if now < final_time:
+            remaining = int(final_time - now)
+            return {"error": True, "message": f"Tiempo de uso agotado. Espera {remaining} segundos o paga más tiempo."}
+        USER_USAGE[user_key] = now + usage_time
 
-# -------------------------------
-# ENDPOINT CLIENTE
-# -------------------------------
-@app.post("/estimado")
-async def obtener_estimado(usuario_id: str = Form(...), plan: str = Form(...), prompt: str = Form(...)):
-    if plan not in PLANES:
-        raise HTTPException(status_code=400, detail="Plan inválido")
-    validar_acceso(usuario_id, plan)
-    idioma = detectar_idioma(prompt)
-    respuesta = await consulta_ia(prompt)
-    return JSONResponse({"estimado": respuesta, "idioma": idioma})
+    prompt = f"Genera un estimado de costos para {state}, ZIP {zip}, código {code}, asegurado: {insured}, plan: {plan_type}"
+    result = await get_cost_estimate(prompt)
+    return {"estimate": result, "plan_type": plan_type, "user": username or "guest"}
 
-# -------------------------------
-# ENDPOINT STRIPE
-# -------------------------------
+
+@app.post("/providers")
+async def providers(
+    state: str = Form(...),
+    zip: str = Form(...)
+):
+    """Devuelve proveedores cercanos (simulado)"""
+    providers_list = [
+        {"id": 1, "name": "Clinica Aura", "specialty": "General", "zip": zip, "in_network": True},
+        {"id": 2, "name": "Dental Smile", "specialty": "Dental", "zip": zip, "in_network": False}
+    ]
+    return providers_list
+
+
 @app.post("/create-checkout-session")
-async def crear_pago(plan: str = Form(...)):
-    if plan not in PRICE_IDS:
-        raise HTTPException(status_code=400, detail="Plan inválido")
+def create_checkout_session(plan: str = Form(...)):
+    """Crea sesión de pago Stripe"""
+    plan = plan.upper()
+    if plan == "BASIC":
+        price_id = STRIPE_BASIC_PLAN_ID
+    elif plan == "PREMIUM":
+        price_id = STRIPE_PREMIUM_PLAN_ID
+    elif plan == "TRIAL":
+        price_id = STRIPE_TRIAL_PLAN_ID
+    else:
+        raise HTTPException(status_code=400, detail="Plan no válido")
+
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
-        line_items=[{"price": PRICE_IDS[plan], "quantity":1}],
+        line_items=[{"price": price_id, "quantity": 1}],
         mode="payment",
-        success_url="https://aura-iyxa.onrender.com/success",
-        cancel_url="https://aura-iyxa.onrender.com/cancel"
+        success_url=f"{BASE_URL}/?success=true",
+        cancel_url=f"{BASE_URL}/?canceled=true"
     )
     return {"url": session.url}
 
-# -------------------------------
-# ENDPOINT DONACIÓN
-# -------------------------------
-@app.post("/donacion")
-async def donacion(cantidad: float = Form(...)):
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{
-            "price_data":{
-                "currency":"usd",
-                "product_data":{"name":"Donación"},
-                "unit_amount":int(cantidad*100)
-            },
-            "quantity":1
-        }],
-        mode="payment",
-        success_url="https://aura-iyxa.onrender.com/success",
-        cancel_url="https://aura-iyxa.onrender.com/cancel"
-    )
-    return {"url": session.url}
 
-# -------------------------------
-# AUTOPROPAGANDA
-# -------------------------------
-AUTOPROPAGANDA = """
-<div style='background-color:#007BFF;color:white;padding:10px;margin:10px;text-align:center;animation:marquee 15s linear infinite;'>
-AURA by May Roga LLC - Asesor de Costos Dentales y Médicos | Calcula precios reales según tu zona y seguro | Beneficios: ahorro, transparencia y confianza
-</div>
-<style>
-@keyframes marquee {0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
-</style>
-"""
-
-@app.get("/autopropaganda")
-async def propaganda():
-    return HTMLResponse(content=AUTOPROPAGANDA)
-
-# -------------------------------
-# RUN APP
-# -------------------------------
+# ========================
+# MAIN
+# ========================
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT",8000)), reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
