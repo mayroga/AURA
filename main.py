@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import stripe
 from datetime import datetime
 from fastapi import FastAPI, Form, HTTPException
@@ -10,23 +9,18 @@ import openai
 from dotenv import load_dotenv
 
 load_dotenv()
-app = FastAPI(title="Aura by May Roga LLC")
+app = FastAPI()
 
-# Configuración Dual IA (Redundancia Crítica)
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configuración de Seguridad y Cobro
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Credenciales de Administrador (Variables de Render)
-ADMIN_USER = os.getenv("ADMIN_USERNAME")
-ADMIN_PASS = os.getenv("ADMIN_PASSWORD")
-
-# IDS DE PRECIO (Vincúlalos con tus IDs de Stripe)
+# IDs de Stripe - ASEGÚRATE DE COPIAR LOS DE TU DASHBOARD DE STRIPE
 PRICE_IDS = {
-    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",   # $5.99
-    "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE", # $9.99
-    "special": "price_1SnatfBOA5mT4t0PZouWzfpw",  # $19.99 (Suscripción)
-    "donacion": "price_DONACION_ID_AQUI"          # Donación
+    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",   
+    "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE", 
+    "special": "price_1SnatfBOA5mT4t0PZouWzfpw",  
+    "donacion": "price_1SoB56BOA5mT4t0P7EXAMPLE" # Reemplaza este por tu ID de Donación real
 }
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -36,12 +30,6 @@ async def read_index():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
-@app.post("/login-owner")
-async def login_owner(username: str = Form(...), password: str = Form(...)):
-    if username == ADMIN_USER and password == ADMIN_PASS:
-        return {"access": "granted"}
-    raise HTTPException(status_code=401)
-
 @app.post("/estimado")
 async def obtener_estimado(
     zip_code: str = Form(...), 
@@ -49,42 +37,41 @@ async def obtener_estimado(
     plan_type: str = Form(...),
     is_admin: str = Form("false")
 ):
-    # Lógica de Tiempos
     hoy = datetime.now()
-    if is_admin == "true":
-        tiempo = "Acceso Ilimitado (Dueño)"
-    elif plan_type == "rapido":
-        tiempo = "7 Minutos"
-    elif plan_type == "standard":
-        tiempo = "15 Minutos"
-    elif plan_type == "special":
-        tiempo = "35 Minutos" if hoy.day <= 2 else "6 Minutos"
-    else:
-        tiempo = "Consulta de cortesía"
+    # Lógica de tiempos exacta
+    if is_admin == "true": tiempo = "Ilimitado"
+    elif plan_type == "rapido": tiempo = "7 min"
+    elif plan_type == "standard": tiempo = "15 min"
+    elif plan_type == "special": tiempo = "35 min" if hoy.day <= 2 else "6 min"
+    else: tiempo = "Acceso por Pago"
 
-    # Prompt de Inteligencia Nacional de Ahorro
+    # El Prompt que vende tu servicio y te blinda
     prompt = f"""
-    Actúa como experto de la Agencia Informativa 'Aura by May Roga LLC'. 
-    El cliente busca '{consulta}' en el ZIP {zip_code}.
-    MISIÓN: Ahorro Nacional (Turismo Médico Interno).
-    1. Da el estimado en el ZIP {zip_code}.
-    2. Da 4 o 5 opciones comparativas en estados o ciudades cercanas más baratas (Ej. NY vs PA, FL vs GA, Hialeah vs Homestead).
-    3. Sugiere si conviene volar, manejar o usar Telemedicina.
-    4. Explica que estos datos son para que el cliente llame al proveedor y negocie.
-    5. BLINDAJE: Finaliza diciendo que somos una Agencia Informativa, no médicos ni seguros.
+    ERES EL ASESOR JEFE DE 'AURA BY MAY ROGA LLC'. 
+    Misión: Inteligencia de Precios para Ahorro del Cliente.
+    
+    1. Localiza 5 estimados de precios (los más baratos encontrados en USA) para: {consulta} cerca de {zip_code}.
+    2. Compara el ahorro si el cliente viaja a otro estado o condado.
+    3. Indica cuánto dinero ganan al NO pagar el precio inflado de los hospitales.
+    4. Explica que estos datos son para negociar directamente con el proveedor.
+    5. BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, una Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Solo informamos costos de mercado."
     """
     
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        respuesta = model.generate_content(prompt).text
-    except:
-        res = openai.ChatCompletion.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-        respuesta = res.choices[0].message.content
+        # timeout de 10 segundos para que no se congele
+        response = model.generate_content(prompt)
+        respuesta = response.text
+    except Exception as e:
+        # Respaldo OpenAI en caso de caída de Gemini
+        try:
+            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
+            respuesta = res.choices[0].message.content
+        except:
+            respuesta = "Aura está procesando altos volúmenes de datos. Por favor, refresque y reintente."
 
-    return {
-        "estimado": f"<strong>Tiempo de Acceso: {tiempo}</strong><br><br>{respuesta.replace('\n', '<br>')}",
-        "mensaje_social": "Su consulta ayuda a May Roga LLC a crear empleos."
-    }
+    return {"estimado": f"<strong>ACCESO CONCEDIDO: {tiempo}</strong><br><br>{respuesta.replace('\n', '<br>')}"}
 
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
