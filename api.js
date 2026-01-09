@@ -1,83 +1,30 @@
-import { BASE_URL } from "./config";
+const BASE_URL = "https://aura-iyxa.onrender.com";
 
-/**
- * Obtener estimado de costos médicos / dentales
- * NO diagnóstico
- * NO precio garantizado
- */
-export async function getEstimate(payload) {
-  try {
-    const response = await fetch(`${BASE_URL}/estimate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error("Estimate request failed");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Estimate error:", error);
-    return {
-      error: true,
-      message:
-        "Unable to retrieve estimate at this time. Please try again later."
-    };
-  }
-}
-
-/**
- * Obtener proveedores cercanos
- * Solo información pública
- */
-export async function getProviders(payload) {
-  try {
-    const response = await fetch(`${BASE_URL}/providers`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error("Providers request failed");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Providers error:", error);
-    return [];
-  }
-}
-
-/**
- * Crear sesión de pago Stripe
- */
 export async function createCheckoutSession(plan) {
-  try {
-    const response = await fetch(`${BASE_URL}/create-checkout-session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ plan })
+    const data = new FormData();
+    data.append("plan", plan);
+    const resp = await fetch(`${BASE_URL}/create-checkout-session`, {
+        method: "POST",
+        body: data
     });
+    return await resp.json();
+}
 
-    if (!response.ok) {
-      throw new Error("Checkout session failed");
-    }
+export async function getEstimate(state, zip, code, insured, plan_type) {
+    const data = new FormData();
+    data.append("state", state);
+    data.append("zip", zip);
+    data.append("code", code);
+    data.append("insured", insured);
+    data.append("plan_type", plan_type);
 
-    return await response.json();
-  } catch (error) {
-    console.error("Stripe error:", error);
-    return {
-      error: true,
-      message: "Payment initialization failed."
-    };
-  }
+    const resp = await fetch(`${BASE_URL}/estimado`, { method: "POST", body: data });
+    return await resp.json();
+}
+
+export async function donate(amount) {
+    const data = new FormData();
+    data.append("amount", amount);
+    const resp = await fetch(`${BASE_URL}/donacion`, { method: "POST", body: data });
+    return await resp.json();
 }
