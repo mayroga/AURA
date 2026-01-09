@@ -2,26 +2,25 @@ import os
 import sqlite3
 import stripe
 from datetime import datetime
-from fastapi import FastAPI, Form, JSONResponse, Depends, HTTPException, status
+from fastapi import FastAPI, Form, Depends, HTTPException, status
+from fastapi.responses import JSONResponse  # Importación correcta para evitar el ImportError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from dotenv import load_dotenv
 
+# Cargar variables de entorno
 load_dotenv()
 
-# --- CONFIGURACIÓN DE SEGURIDAD ---
 app = FastAPI(title="Aura by May Roga LLC")
-security = HTTPBasic()
 
-# Credenciales de Admin (desde tus variables)
+# --- SEGURIDAD ---
+security = HTTPBasic()
 ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "password")
 
-# --- CONFIGURACIÓN DE STRIPE ---
+# --- STRIPE ---
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-# IDs de tus Planes (Asegúrate de que coincidan con los de tu Stripe Dashboard)
 PRICE_IDS = {
     "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",   # $5.99
     "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE", # $9.99
@@ -31,45 +30,68 @@ PRICE_IDS = {
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- INICIALIZACIÓN DE BASE DE DATOS ---
-# Usamos tu archivo SQL para cargar los precios de los 50 estados
+# --- BASE DE DATOS (Carga desde tu cost_estimates.sql) ---
 def init_db():
+    # Usamos SQLite en memoria para máxima velocidad de respuesta
     conn = sqlite3.connect(':memory:', check_same_thread=False)
     try:
-        with open('cost_estimates.sql', 'r', encoding='utf-8') as f:
-            conn.executescript(f.read())
-        print("Base de datos Aura cargada correctamente.")
+        # Buscamos tu archivo SQL en la raíz del proyecto
+        sql_path = 'cost_estimates.sql'
+        if os.path.exists(sql_path):
+            with open(sql_path, 'r', encoding='utf-8') as f:
+                conn.executescript(f.read())
+            print("Base de datos Aura (50 Estados) cargada exitosamente.")
+        else:
+            print("Error: No se encontró el archivo cost_estimates.sql")
     except Exception as e:
-        print(f"Error cargando SQL: {e}")
+        print(f"Error cargando los datos de Aura: {e}")
     return conn
 
-db = init_db()
+db_conn = init_db()
 
-# --- SEGURIDAD ADMIN ---
 def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
     if credentials.username != ADMIN_USER or credentials.password != ADMIN_PASS:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acceso Denegado",
+            headers={"WWW-Authenticate": "Basic"},
+        )
     return credentials.username
 
 # --- ENDPOINTS ---
 
+@app.get("/")
+async def root():
+    return {"empresa": "May Roga LLC", "app": "Aura", "status": "Online"}
+
 @app.post("/estimado")
-async def estimado(zip_code: str = Form(...), code: str = Form(...), plan_type: str = Form(...)):
-    dia = datetime.now().day
+async def obtener_estimado(
+    zip_code: str = Form(...), 
+    code: str = Form(...), 
+    plan_type: str = Form(...)
+):
+    dia_actual = datetime.now().day
     plan = plan_type.lower()
     
-    # Lógica de tiempos Aura
-    if plan == "rapido": tiempo = 7
-    elif plan == "standard": tiempo = 15
-    elif plan == "special": tiempo = 35 if dia <= 2 else 6
-    else: return JSONResponse({"error": "Plan no válido"}, status_code=400)
+    # Lógica de tiempos de acceso Aura
+    if plan == "rapido":
+        tiempo = 7
+    elif plan == "standard":
+        tiempo = 15
+    elif plan == "special":
+        tiempo = 35 if dia_actual <= 2 else 6
+    else:
+        return JSONResponse(content={"error": "Plan no válido"}, status_code=400)
 
-    cursor = db.cursor()
-    cursor.execute("SELECT description, low_price, high_price, state FROM cost_estimates WHERE cpt_code = ? AND zip_code = ?", (code.upper(), zip_code))
+    # Consulta directa a los datos de Aura
+    cursor = db_conn.cursor()
+    query = "SELECT description, low_price, high_price, state FROM cost_estimates WHERE cpt_code = ? AND zip_code = ?"
+    cursor.execute(query, (code.upper(), zip_code))
     row = cursor.fetchone()
 
     if row:
@@ -77,28 +99,40 @@ async def estimado(zip_code: str = Form(...), code: str = Form(...), plan_type: 
             "empresa": "Aura by May Roga LLC",
             "procedimiento": row[0],
             "rango": f"${row[1]} - ${row[2]}",
-            "ubicacion": f"{row[3]} | ZIP: {zip_code}",
-            "minutos": tiempo,
-            "blindaje": "Protección total al bolsillo frente a sobrecargos."
+            "ubicacion": f"Estado: {row[3]} | ZIP: {zip_code}",
+            "tiempo_concedido": f"{tiempo} min",
+            "nota": "Estimado oficial basado en transparencia de códigos."
         }
-    return {"error": "Código no encontrado. Use códigos oficiales CPT/CDT."}
+    
+    return JSONResponse(
+        content={
+            "empresa": "Aura by May Roga LLC",
+            "error": "Código no localizado. Por favor, verifique el código CPT/CDT.",
+            "tiempo_concedido": f"{tiempo} min"
+        }, 
+        status_code=404
+    )
 
 @app.post("/create-checkout-session")
 async def create_checkout_session(plan: str = Form(...)):
+    plan = plan.lower()
+    if plan not in PRICE_IDS:
+        return JSONResponse(content={"error": "Plan inválido"}, status_code=400)
+
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
-            mode="subscription" if plan.lower() == "special" else "payment",
+            line_items=[{"price": PRICE_IDS[plan], "quantity": 1}],
+            mode="subscription" if plan == "special" else "payment",
             success_url="https://aura-iyxa.onrender.com/?success=true",
-            cancel_url="https://aura-iyxa.onrender.com/?cancel=true"
+            cancel_url="https://aura-iyxa.onrender.com/?cancel=true",
         )
         return {"url": session.url}
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.post("/donacion")
-async def donacion(amount: int = Form(...)):
+async def crear_donacion(amount: int = Form(...)):
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -106,8 +140,8 @@ async def donacion(amount: int = Form(...)):
                 "price_data": {
                     "currency": "usd",
                     "product_data": {
-                        "name": "Donación Solidaria Aura",
-                        "description": "Fondo para medios de trabajo y mantenimiento."
+                        "name": "Donación Solidaria - Aura",
+                        "description": "Fondo para herramientas de trabajo y cadena de favores."
                     },
                     "unit_amount": amount * 100,
                 },
@@ -119,9 +153,4 @@ async def donacion(amount: int = Form(...)):
         )
         return {"url": session.url}
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-# Panel de administración simple para ver que la API está viva
-@app.get("/admin/status")
-async def admin_status(username: str = Depends(get_current_user)):
-    return {"status": "Aura System Online", "admin": username, "db_active": True}
+        return JSONResponse(content={"error": str(e)}, status_code=500)
