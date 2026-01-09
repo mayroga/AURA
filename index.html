@@ -3,114 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura - Transparencia de Salud</title>
+    <title>Aura - Transparencia Total</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #000; color: #fff; margin: 0; padding: 20px; }
-        .main-card { background: #0a0a0a; border-radius: 25px; padding: 30px; border: 2px solid #00d4ff; box-shadow: 0 0 20px #00d4ff55; max-width: 850px; margin: auto; }
+        body { font-family: 'Arial', sans-serif; background: #000; color: #fff; text-align: center; margin: 0; padding: 20px; }
+        .card { background: #0a0a0a; border: 2px solid #00d4ff; border-radius: 25px; padding: 35px; max-width: 800px; margin: auto; box-shadow: 0 0 40px #00d4ff44; }
         
-        /* Autopropaganda Neón Azul - Letras Lindas */
-        .promo-box { background: #001a33; border: 1px solid #00d4ff; border-radius: 12px; margin: 20px 0; overflow: hidden; padding: 15px; }
-        .promo-text { display: inline-block; white-space: nowrap; color: #00d4ff; font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 10px #00d4ff; animation: scroll 20s linear infinite; }
+        /* Autopropaganda Azul Brillante */
+        .promo-box { background: #001122; border-radius: 15px; border: 1px solid #00d4ff; margin: 25px 0; overflow: hidden; padding: 15px; }
+        .marquee { display: inline-block; white-space: nowrap; color: #00d4ff; font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 10px #00d4ff; animation: scroll 20s linear infinite; }
         @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-        .btn-lang { background: #111; color: #00d4ff; border: 1px solid #00d4ff; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin: 5px; font-weight: bold; }
-        .plan-box { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 30px 0; }
-        .plan { background: #111; border: 1px solid #333; padding: 20px; border-radius: 15px; width: 220px; transition: 0.3s; }
-        .plan:hover { border-color: #00d4ff; }
+        .plans { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 30px 0; }
+        .plan { background: #111; border: 1px solid #333; padding: 20px; border-radius: 20px; width: 200px; }
+        .plan h3 { color: #00d4ff; margin-bottom: 5px; }
         
-        button.buy-btn { background: #00d4ff; color: #000; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
-        .shield { font-size: 0.85rem; color: #aaa; background: #001a33; padding: 20px; border-radius: 15px; margin-top: 30px; border: 1px solid #007bff; line-height: 1.5; }
+        button { background: #00d4ff; color: #000; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; }
+        button:hover { background: #fff; box-shadow: 0 0 20px #00d4ff; }
         
-        input { padding: 12px; border-radius: 8px; border: 1px solid #00d4ff; background: #000; color: #fff; margin: 5px; width: 40%; }
+        .search-area { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #00d4ff; margin-top: 30px; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #00d4ff; background: #000; color: #fff; margin: 10px; width: 250px; }
+        
+        .shield { margin-top: 40px; padding: 20px; background: rgba(0, 212, 255, 0.05); border-radius: 15px; border: 1px solid #004466; font-size: 0.85rem; color: #aaa; }
     </style>
 </head>
 <body>
 
-<div class="main-card">
-    <h1 style="color: #00d4ff; font-size: 3.5rem; margin: 0; letter-spacing: 5px;">AURA</h1>
-    <p style="color: #666; margin-bottom: 20px;">by May Roga LLC</p>
+<div class="card">
+    <h1 style="color: #00d4ff; font-size: 3.5rem; margin: 0;">AURA</h1>
+    <p style="color: #666;">by May Roga LLC</p>
 
-    <div class="lang-btns">
-        <button class="btn-lang" onclick="setLang('es')">Español</button>
-        <button class="btn-lang" onclick="setLang('en')">English</button>
-        <button class="btn-lang" onclick="setLang('ht')">Kreyòl</button>
+    <div style="margin: 20px 0;">
+        <button onclick="setLang('es')" style="background:none; color:#00d4ff; border:1px solid #00d4ff; padding:5px 10px; font-size:0.8rem;">Español</button>
+        <button onclick="setLang('en')" style="background:none; color:#00d4ff; border:1px solid #00d4ff; padding:5px 10px; font-size:0.8rem;">English</button>
+        <button onclick="setLang('ht')" style="background:none; color:#00d4ff; border:1px solid #00d4ff; padding:5px 10px; font-size:0.8rem;">Kreyòl</button>
     </div>
 
     <div class="promo-box">
-        <div class="marquee-text" id="promo">
-            💎 NO SOMOS SEGURO: SOMOS TRANSPARENCIA • 🏥 CONOCE EL PRECIO ANTES DE PAGAR • 🦷 MÉDICOS Y DENTISTAS EN LOS 50 ESTADOS • 📉 EVITA ENGAÑOS CON CÓDIGOS OFICIALES • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR
+        <div class="marquee" id="marquee-text">
+            🛡️ EVITA COBROS EXCESIVOS • 📈 PRECIOS POR ZIP CODE Y CONDADO • 🦷 TRANSPARENCIA EN LOS 50 ESTADOS • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR • 📉 NO PAGUES DE MÁS POR TU SALUD
         </div>
     </div>
 
-    <div class="plan-box">
+    <div class="plans">
         <div class="plan">
-            <h3 id="p1" style="color:#00d4ff">Rápido</h3>
-            <p style="font-size: 1.8rem;">$5.99</p>
-            <p id="t1">7 Minutos</p>
-            <button class="buy-btn" onclick="pay('rapido')">SELECT</button>
+            <h3 id="p1">Rápido</h3>
+            <p style="font-size: 1.5rem;">$5.99</p>
+            <p>7 Minutos</p>
+            <button onclick="pay('rapido')">ELEGIR</button>
         </div>
         <div class="plan" style="border-color: #00d4ff;">
-            <h3 id="p2" style="color:#00d4ff">Standard</h3>
-            <p style="font-size: 1.8rem;">$9.99</p>
-            <p id="t2">15 Minutos</p>
-            <button class="buy-btn" onclick="pay('standard')">SELECT</button>
+            <h3 id="p2">Standard</h3>
+            <p style="font-size: 1.5rem;">$9.99</p>
+            <p>15 Minutos</p>
+            <button onclick="pay('standard')">ELEGIR</button>
         </div>
         <div class="plan">
-            <h3 id="p3" style="color:#00d4ff">Special</h3>
-            <p style="font-size: 1.8rem;">$19.99</p>
-            <p id="t3">35min / 6min</p>
-            <button class="buy-btn" onclick="pay('special')">SELECT</button>
+            <h3 id="p3">Special</h3>
+            <p style="font-size: 1.5rem;">$19.99</p>
+            <p id="p3-desc">35min / 6min</p>
+            <button onclick="pay('special')">ELEGIR</button>
         </div>
     </div>
 
-    <div style="background: #111; padding: 30px; border-radius: 20px; border: 1px solid #00d4ff;">
-        <p id="search-info" style="color: #00d4ff; font-weight: bold; font-size: 1.2rem;">CONSULTA PREVENTIVA DE COSTOS</p>
+    <div class="search-area">
+        <p style="color: #00d4ff; font-weight: bold;" id="search-title">CONSULTA PREVENTIVA DE COSTOS</p>
         <input type="text" id="zip" placeholder="ZIP Code">
         <input type="text" id="code" placeholder="Código CPT/CDT">
         <br><br>
-        <button class="buy-btn" style="width: auto; padding: 15px 40px;" onclick="search()" id="btn-search">BUSCAR ESTIMADO</button>
-        <div id="res" style="margin-top: 25px; font-size: 1.4rem; color: #00d4ff; font-weight: bold;"></div>
+        <button onclick="search()" id="search-btn">BUSCAR ESTIMADO</button>
+        <div id="res" style="margin-top: 25px; font-size: 1.3rem; color: #00d4ff;"></div>
     </div>
 
     <div class="shield" id="legal">
-        <strong>BLINDAJE LEGAL:</strong> Aura by May Roga LLC no es una agencia médica ni de seguros. Somos una plataforma de transparencia que utiliza códigos públicos oficiales para evitar que el sistema te engañe. Resolvemos la necesidad real de saber cuánto vale tu salud antes de recibir el servicio.
+        <strong>BLINDAJE LEGAL:</strong> Aura by May Roga LLC es una herramienta informativa. Usamos códigos públicos oficiales para evitar engaños. Tu aporte compra medios de trabajo para necesitados.
     </div>
 </div>
 
 <script>
     const API = "https://aura-iyxa.onrender.com";
     const dict = {
-        es: {
-            promo: "💎 NO SOMOS SEGURO: SOMOS TRANSPARENCIA • 🏥 CONOCE EL PRECIO ANTES DE PAGAR • 🦷 MÉDICOS Y DENTISTAS EN LOS 50 ESTADOS • 📉 EVITA ENGAÑOS CON CÓDIGOS OFICIALES • 🤝 TU CONSULTA AYUDA A OTROS A TRABAJAR",
-            info: "CONSULTA PREVENTIVA DE COSTOS",
-            btn: "BUSCAR ESTIMADO",
-            legal: "<strong>BLINDAJE LEGAL:</strong> Aura by May Roga LLC no es una agencia médica ni de seguros. Somos transparencia para evitar engaños.",
-            p1: "Rápido", p2: "Standard", p3: "Special"
-        },
-        en: {
-            promo: "💎 NOT INSURANCE: WE ARE TRANSPARENCY • 🏥 KNOW THE PRICE BEFORE YOU PAY • 🦷 DOCTORS & DENTISTS IN ALL 50 STATES • 📉 AVOID FRAUD WITH OFFICIAL CODES • 🤝 YOUR SEARCH HELPS OTHERS WORK",
-            info: "PREVENTIVE COST CONSULTATION",
-            btn: "SEARCH ESTIMATE",
-            legal: "<strong>LEGAL SHIELD:</strong> Aura by May Roga LLC is not a medical or insurance agency. We are transparency to avoid fraud.",
-            p1: "Fast", p2: "Standard", p3: "Special"
-        },
-        ht: {
-            promo: "💎 NOU PA ASIRANS: NOU SE TRANSPARANS • 🏥 KONNEN PRI A ANVAN OU PEYE • 🦷 DOKTÈ AK DANTIS NAN TOUT 50 ETA • 📉 EVITE FRAID AK KÒD OFISYÈL • 🤝 CHACHE OU EDE LÒT TRAVAY",
-            info: "KONSILTASYON PRI PREVANTIF",
-            btn: "CHACHE ESTIMASYON",
-            legal: "<strong>BLENDAJ LEGAL:</strong> Aura by May Roga LLC se pa yon ajans medikal oswa asirans. Nou se transparans pou evite manti.",
-            p1: "Rapido", p2: "Standard", p3: "Special"
-        }
+        es: { p1: "Rápido", p2: "Standard", p3: "Special", search: "CONSULTA PREVENTIVA", btn: "BUSCAR", promo: "🛡️ EVITA COBROS EXCESIVOS • 📈 PRECIOS POR ZIP CODE • 🤝 AYUDAMOS A TRABAJAR" },
+        en: { p1: "Fast", p2: "Standard", p3: "Special", search: "COST CONSULTATION", btn: "SEARCH", promo: "🛡️ AVOID OVERCHARGES • 📈 PRICES BY ZIP CODE • 🤝 WE HELP OTHERS WORK" },
+        ht: { p1: "Rapido", p2: "Standard", p3: "Special", search: "KONSILTASYON PRI", btn: "CHACHE", promo: "🛡️ EVITE DEPAN TRAVAY • 📈 PRI PA ZIP KÒD • 🤝 NOU EDE TRAVAY" }
     };
 
     function setLang(l) {
-        document.getElementById("promo").innerText = dict[l].promo;
-        document.getElementById("search-info").innerText = dict[l].info;
-        document.getElementById("btn-search").innerText = dict[l].btn;
-        document.getElementById("legal").innerHTML = dict[l].legal;
         document.getElementById("p1").innerText = dict[l].p1;
         document.getElementById("p2").innerText = dict[l].p2;
         document.getElementById("p3").innerText = dict[l].p3;
+        document.getElementById("search-title").innerText = dict[l].search;
+        document.getElementById("search-btn").innerText = dict[l].btn;
+        document.getElementById("marquee-text").innerText = dict[l].promo;
     }
 
     async function pay(plan) {
@@ -129,6 +112,5 @@
         document.getElementById("res").innerHTML = `${data.procedimiento || 'Error'}<br>${data.rango || ''}`;
     }
 </script>
-
 </body>
 </html>
