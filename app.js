@@ -11,19 +11,16 @@ import {
 
 import { styles } from "./styles";
 import { ALLOWED_STATES, DISCLAIMER_SHORT } from "./standards";
-import { API_URL, PLANS } from "./config";
+import { PLANS, BASE_URL } from "./config";
 import { getEstimate, getProviders } from "./api";
 
 export default function App() {
   const [accepted, setAccepted] = useState(false);
-
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
   const [code, setCode] = useState("");
-
   const [insured, setInsured] = useState(false);
   const [planType, setPlanType] = useState("BASIC");
-
   const [estimate, setEstimate] = useState(null);
   const [providers, setProviders] = useState([]);
 
@@ -70,11 +67,11 @@ export default function App() {
         Healthcare & Dental Cost Transparency
       </Text>
 
-      {/* LEGAL ACCEPTANCE */}
       <View style={styles.legalBox}>
         <Text style={styles.legalText}>
           This platform provides cost estimates only. It does NOT provide
           medical advice, insurance advice, billing, or price guarantees.
+          Legal Version: {process.env.LEGAL_VERSION}
         </Text>
         <Button
           title={accepted ? "Disclaimer Accepted ✅" : "Accept Disclaimer"}
@@ -82,14 +79,12 @@ export default function App() {
         />
       </View>
 
-      {/* LOCATION */}
       <TextInput
         placeholder="State (ex: FL)"
         value={state}
         onChangeText={setState}
         style={styles.input}
       />
-
       <TextInput
         placeholder="ZIP Code"
         value={zip}
@@ -97,8 +92,6 @@ export default function App() {
         keyboardType="numeric"
         style={styles.input}
       />
-
-      {/* PROCEDURE CODE */}
       <TextInput
         placeholder="Procedure Code (CPT / CDT)"
         value={code}
@@ -106,13 +99,11 @@ export default function App() {
         style={styles.input}
       />
 
-      {/* INSURANCE */}
       <View style={styles.row}>
         <Text>Insured</Text>
         <Switch value={insured} onValueChange={setInsured} />
       </View>
 
-      {/* PLAN TYPE */}
       <Text style={styles.subtitle}>Plan</Text>
       <View style={styles.row}>
         <Button title="BASIC" onPress={() => setPlanType("BASIC")} />
@@ -122,7 +113,6 @@ export default function App() {
 
       <Button title="Get Cost Estimate" onPress={handleEstimate} />
 
-      {/* RESULTS */}
       {estimate && (
         <View style={styles.resultBox}>
           <Text style={styles.resultTitle}>Estimated Cost Range</Text>
@@ -141,7 +131,6 @@ export default function App() {
         </View>
       )}
 
-      {/* PROVIDERS */}
       {providers.map((p) => (
         <View key={p.id} style={styles.providerBox}>
           <Text style={styles.providerName}>{p.name}</Text>
