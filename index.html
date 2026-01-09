@@ -11,7 +11,11 @@
             text-align: center; 
         }
         h1 { margin-bottom: 20px; }
-        .autopropaganda { margin-bottom: 30px; font-size: 18px; }
+        .autopropaganda { 
+            margin-bottom: 30px; 
+            font-size: 18px; 
+            height: 24px; /* fijo para que no salte la página */
+        }
         .plan-btn { 
             padding: 15px 30px; 
             margin: 10px; 
@@ -29,7 +33,7 @@
 </head>
 <body>
     <h1 id="title">Bienvenido a Aura by May Roga LLC</h1>
-    <div class="autopropaganda" id="autopropaganda">Bienestar y protección natural 🌿</div>
+    <div class="autopropaganda" id="autopropaganda"></div>
 
     <!-- Selector de idioma -->
     <select id="langSelector">
@@ -52,24 +56,61 @@
             "PREMIUM": "price_1SnZ0eBOA5mT4t0Phwt58d4k"
         };
 
+        // Mensajes rotativos para autopropaganda
+        const messagesES = [
+            "Brindamos bienestar natural y risoterapia 🌿",
+            "Tus pagos están protegidos legalmente 💼",
+            "Mejoramos tu salud emocional y física 💖",
+            "Servicios alejados de abogados y conflictos legales ⚖️",
+            "Beneficios para adultos mayores y toda la familia 👨‍👩‍👧‍👦"
+        ];
+
+        const messagesEN = [
+            "We provide natural wellness and laughter therapy 🌿",
+            "Your payments are legally protected 💼",
+            "Enhancing your emotional and physical health 💖",
+            "Services far from lawyers and legal conflicts ⚖️",
+            "Benefits for seniors and the whole family 👨‍👩‍👧‍👦"
+        ];
+
+        const messagesHT = [
+            "Nou ofri byennèt natirèl ak terapi ri 🌿",
+            "Peman ou yo legalman pwoteje 💼",
+            "Amelyore sante emosyonèl ak fizik ou 💖",
+            "Sèvis lwen avoka ak konfli legal ⚖️",
+            "Benefis pou granmoun aje ak tout fanmi an 👨‍👩‍👧‍👦"
+        ];
+
+        let messageIndex = 0;
+        let currentMessages = messagesES;
+        const autopropagandaEl = document.getElementById("autopropaganda");
+
+        function rotateMessages() {
+            autopropagandaEl.innerText = currentMessages[messageIndex];
+            messageIndex = (messageIndex + 1) % currentMessages.length;
+        }
+        setInterval(rotateMessages, 3000); // cambia cada 3 segundos
+        rotateMessages();
+
         // Cambio de idioma
         document.getElementById("langSelector").addEventListener("change", (e) => {
             const lang = e.target.value;
             const title = document.getElementById("title");
-            const ad = document.getElementById("autopropaganda");
+            messageIndex = 0;
 
             if (lang === "es") {
                 title.innerText = "Bienvenido a Aura by May Roga LLC";
-                ad.innerText = "Bienestar y protección natural 🌿";
+                currentMessages = messagesES;
             } else if (lang === "en") {
                 title.innerText = "Welcome to Aura by May Roga LLC";
-                ad.innerText = "Natural wellness and protection 🌿";
+                currentMessages = messagesEN;
             } else {
                 title.innerText = "Byenveni nan Aura by May Roga LLC";
-                ad.innerText = "Byennèt natirèl ak pwoteksyon 🌿";
+                currentMessages = messagesHT;
             }
         });
 
+        // Checkout Stripe
         async function checkout(planKey) {
             try {
                 const priceId = priceIds[planKey];
