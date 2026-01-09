@@ -1,51 +1,83 @@
-import { API_URL } from "./config";
+import { BASE_URL } from "./config";
 
-// FETCH ESTIMATE
-export async function getEstimate({ state, zip, code, insured = false, plan_type = "BASIC" }) {
+/**
+ * Obtener estimado de costos médicos / dentales
+ * NO diagnóstico
+ * NO precio garantizado
+ */
+export async function getEstimate(payload) {
   try {
-    const res = await fetch(`${API_URL}/estimate`, {
+    const response = await fetch(`${BASE_URL}/estimate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, zip, code, insured, plan_type })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch estimate");
+    if (!response.ok) {
+      throw new Error("Estimate request failed");
     }
 
-    const data = await res.json();
-    return data;
-
-  } catch (err) {
-    console.error("Error fetching estimate:", err);
+    return await response.json();
+  } catch (error) {
+    console.error("Estimate error:", error);
     return {
-      min: 0,
-      max: 0,
-      plan_type,
-      insured,
-      disclaimer: "Error fetching estimate. Try again later."
+      error: true,
+      message:
+        "Unable to retrieve estimate at this time. Please try again later."
     };
   }
 }
 
-// FETCH PROVIDERS / MARKETPLACE
-export async function getProviders({ state, zip, specialty = null }) {
+/**
+ * Obtener proveedores cercanos
+ * Solo información pública
+ */
+export async function getProviders(payload) {
   try {
-    const res = await fetch(`${API_URL}/providers`, {
+    const response = await fetch(`${BASE_URL}/providers`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, zip, specialty })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch providers");
+    if (!response.ok) {
+      throw new Error("Providers request failed");
     }
 
-    const data = await res.json();
-    return data;
-
-  } catch (err) {
-    console.error("Error fetching providers:", err);
+    return await response.json();
+  } catch (error) {
+    console.error("Providers error:", error);
     return [];
+  }
+}
+
+/**
+ * Crear sesión de pago Stripe
+ */
+export async function createCheckoutSession(plan) {
+  try {
+    const response = await fetch(`${BASE_URL}/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ plan })
+    });
+
+    if (!response.ok) {
+      throw new Error("Checkout session failed");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Stripe error:", error);
+    return {
+      error: true,
+      message: "Payment initialization failed."
+    };
   }
 }
