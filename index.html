@@ -2,143 +2,129 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Aura by May Roga LLC - Pago de Planes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura by May Roga LLC - Transparencia de Salud</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px; 
-            background: #f7f7f7; 
-            text-align: center; 
-        }
-        h1 { margin-bottom: 20px; }
-        .autopropaganda { 
-            margin-bottom: 30px; 
-            font-size: 18px; 
-            height: 24px; /* fijo para que no salte la página */
-        }
-        .plan-btn { 
-            padding: 15px 30px; 
-            margin: 10px; 
-            font-size: 16px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 5px; 
-            color: #fff; 
-        }
-        #trial { background-color: #6c757d; }
-        #basic { background-color: #0b5cff; }
-        #premium { background-color: #28a745; }
-        select { margin-bottom: 20px; padding: 5px; font-size: 16px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #f0f2f5; color: #333; text-align: center; }
+        .container { max-width: 900px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { color: #0b5cff; font-size: 2.5rem; margin-bottom: 5px; }
+        h2 { font-size: 1.1rem; color: #666; margin-top: 0; margin-bottom: 30px; }
+        .autopropaganda { font-style: italic; color: #444; height: 30px; margin-bottom: 30px; font-weight: bold; }
+        
+        .plan-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .plan-card { background: white; border: 2px solid #eee; padding: 25px; border-radius: 15px; width: 250px; transition: 0.3s; }
+        .plan-card:hover { border-color: #0b5cff; transform: translateY(-5px); }
+        .price { font-size: 28px; font-weight: bold; margin: 15px 0; color: #333; }
+        .plan-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        
+        .donation-section { margin-top: 50px; padding: 30px; border: 2px dashed #0b5cff; border-radius: 15px; background: #f9fbff; }
+        .search-section { margin-top: 40px; padding: 30px; background: #eef4ff; border-radius: 15px; }
+        input { padding: 12px; margin: 10px; border: 1px solid #ccc; border-radius: 8px; width: 200px; }
+        .btn-search { background: #0b5cff; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1 id="title">Bienvenido a Aura by May Roga LLC</h1>
-    <div class="autopropaganda" id="autopropaganda"></div>
 
-    <!-- Selector de idioma -->
-    <select id="langSelector">
+<div class="container">
+    <h1>Aura</h1>
+    <h2>by May Roga LLC</h2>
+    <div class="autopropaganda" id="autopropaganda">Cargando transparencia médica...</div>
+
+    <select id="langSelector" style="padding: 10px; border-radius: 5px; margin-bottom: 30px;">
         <option value="es">Español</option>
         <option value="en">English</option>
         <option value="ht">Kreyòl Ayisyen</option>
     </select>
 
-    <div>
-        <button class="plan-btn" id="trial">Trial - $0.99 / mes</button>
-        <button class="plan-btn" id="basic">Basic - $9.99 / mes</button>
-        <button class="plan-btn" id="premium">Premium - $19.99 / mes</button>
+    <div class="plan-container">
+        <div class="plan-card">
+            <h3>Rápido</h3>
+            <p class="price">$5.99</p>
+            <p><strong>7 minutos</strong> de consulta</p>
+            <button class="plan-btn" style="background: #6c757d;" onclick="checkout('rapido')">Elegir Plan</button>
+        </div>
+        <div class="plan-card" style="border-color: #0b5cff;">
+            <h3>Standard</h3>
+            <p class="price">$9.99</p>
+            <p><strong>15 minutos</strong> de consulta</p>
+            <button class="plan-btn" style="background: #0b5cff;" onclick="checkout('standard')">Elegir Plan</button>
+        </div>
+        <div class="plan-card">
+            <h3>Special</h3>
+            <p class="price">$19.99</p>
+            <p><strong>35 min</strong> (Día 1-2) / 6 min (Resto)</p>
+            <button class="plan-btn" style="background: #28a745;" onclick="checkout('special')">Elegir Plan</button>
+        </div>
     </div>
 
-    <script>
-        const BASE_URL = "https://aura-iyxa.onrender.com";
-        const priceIds = {
-            "TRIAL": "price_1SnYkMBOA5mT4t0P2Ra3NpYy",
-            "BASIC": "price_1SnYuABOA5mT4t0Pv706amhC",
-            "PREMIUM": "price_1SnZ0eBOA5mT4t0Phwt58d4k"
-        };
+    <div class="search-section">
+        <h3>Consultar Costo Estimado</h3>
+        <input type="text" id="zip_code" placeholder="ZIP Code">
+        <input type="text" id="code" placeholder="Código (ej: D1110)">
+        <button class="btn-search" onclick="consultar()">Consultar</button>
+        <div id="result" style="margin-top: 20px; font-weight: bold; color: #0b5cff;"></div>
+    </div>
 
-        // Mensajes rotativos para autopropaganda
-        const messagesES = [
-            "Brindamos bienestar natural y risoterapia 🌿",
-            "Tus pagos están protegidos legalmente 💼",
-            "Mejoramos tu salud emocional y física 💖",
-            "Servicios alejados de abogados y conflictos legales ⚖️",
-            "Beneficios para adultos mayores y toda la familia 👨‍👩‍👧‍👦"
-        ];
+    <div class="donation-section">
+        <h3>Apoya nuestra Misión Solidaria 🤝</h3>
+        <p style="font-size: 0.9rem; color: #555; margin-bottom: 20px;">
+            Tu donación apoya al equipo de trabajo y permite comprar **herramientas de trabajo para necesitados**, 
+            ayudándoles a prosperar para que ellos sigan la cadena de ayuda.
+        </p>
+        <input type="number" id="donAmount" placeholder="Monto $" style="width: 100px;">
+        <button onclick="donar()" style="background: #ff9800; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Donar con Propósito</button>
+    </div>
 
-        const messagesEN = [
-            "We provide natural wellness and laughter therapy 🌿",
-            "Your payments are legally protected 💼",
-            "Enhancing your emotional and physical health 💖",
-            "Services far from lawyers and legal conflicts ⚖️",
-            "Benefits for seniors and the whole family 👨‍👩‍👧‍👦"
-        ];
+    <p style="margin-top: 40px; font-size: 0.75rem; color: #999;">
+        © 2026 May Roga LLC. La información proporcionada es analítica y educativa, basada en datos históricos. No constituye consejo médico ni garantía de precios finales.
+    </p>
+</div>
 
-        const messagesHT = [
-            "Nou ofri byennèt natirèl ak terapi ri 🌿",
-            "Peman ou yo legalman pwoteje 💼",
-            "Amelyore sante emosyonèl ak fizik ou 💖",
-            "Sèvis lwen avoka ak konfli legal ⚖️",
-            "Benefis pou granmoun aje ak tout fanmi an 👨‍👩‍👧‍👦"
-        ];
+<script>
+    const BASE_URL = "https://aura-iyxa.onrender.com";
 
-        let messageIndex = 0;
-        let currentMessages = messagesES;
-        const autopropagandaEl = document.getElementById("autopropaganda");
+    const msgs = {
+        es: ["Transparencia de costos médicos 🇺🇸", "Evita sorpresas en tu factura dental 🦷", "Datos oficiales y actualizados 📊"],
+        en: ["Healthcare cost transparency 🇺🇸", "Avoid surprises in dental bills 🦷", "Official updated data 📊"],
+        ht: ["Transparans nan depans medikal 🇺🇸", "Evite sipriz nan bòdwo dantè ou 🦷", "Done ofisyèl mete ajou 📊"]
+    };
 
-        function rotateMessages() {
-            autopropagandaEl.innerText = currentMessages[messageIndex];
-            messageIndex = (messageIndex + 1) % currentMessages.length;
-        }
-        setInterval(rotateMessages, 3000); // cambia cada 3 segundos
-        rotateMessages();
+    let currentLang = "es";
+    let msgIdx = 0;
 
-        // Cambio de idioma
-        document.getElementById("langSelector").addEventListener("change", (e) => {
-            const lang = e.target.value;
-            const title = document.getElementById("title");
-            messageIndex = 0;
+    function rotateMsgs() {
+        document.getElementById("autopropaganda").innerText = msgs[currentLang][msgIdx];
+        msgIdx = (msgIdx + 1) % msgs[currentLang].length;
+    }
+    setInterval(rotateMsgs, 3000);
 
-            if (lang === "es") {
-                title.innerText = "Bienvenido a Aura by May Roga LLC";
-                currentMessages = messagesES;
-            } else if (lang === "en") {
-                title.innerText = "Welcome to Aura by May Roga LLC";
-                currentMessages = messagesEN;
-            } else {
-                title.innerText = "Byenveni nan Aura by May Roga LLC";
-                currentMessages = messagesHT;
-            }
-        });
+    document.getElementById("langSelector").onchange = (e) => { currentLang = e.target.value; rotateMsgs(); };
 
-        // Checkout Stripe
-        async function checkout(planKey) {
-            try {
-                const priceId = priceIds[planKey];
-                if (!priceId) { alert("Plan inválido"); return; }
+    async function checkout(plan) {
+        const fd = new FormData(); fd.append("plan", plan);
+        const resp = await fetch(`${BASE_URL}/create-checkout-session`, { method: "POST", body: fd });
+        const data = await resp.json();
+        if(data.url) window.location.href = data.url;
+    }
 
-                const data = new FormData();
-                data.append("price_id", priceId);
+    async function consultar() {
+        const zip = document.getElementById("zip_code").value;
+        const code = document.getElementById("code").value;
+        if(!zip || !code) { alert("Completa los datos"); return; }
+        
+        const fd = new FormData(); fd.append("zip_code", zip); fd.append("code", code); fd.append("plan_type", "standard");
+        const resp = await fetch(`${BASE_URL}/estimado`, { method: "POST", body: fd });
+        const data = await resp.json();
+        document.getElementById("result").innerText = `${data.procedimiento || ""}: ${data.rango_estimado} (${data.minutos_concedidos} min concedidos)`;
+    }
 
-                const resp = await fetch(`${BASE_URL}/create-checkout-session`, {
-                    method: "POST",
-                    body: data
-                });
-
-                const session = await resp.json();
-                if (session.url) {
-                    window.location.href = session.url;
-                } else {
-                    alert("Error al crear sesión de pago.");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Ocurrió un error en el pago.");
-            }
-        }
-
-        document.getElementById("trial").addEventListener("click", () => checkout("TRIAL"));
-        document.getElementById("basic").addEventListener("click", () => checkout("BASIC"));
-        document.getElementById("premium").addEventListener("click", () => checkout("PREMIUM"));
-    </script>
+    async function donar() {
+        const amt = document.getElementById("donAmount").value;
+        const fd = new FormData(); fd.append("amount", amt);
+        const resp = await fetch(`${BASE_URL}/donacion`, { method: "POST", body: fd });
+        const data = await resp.json();
+        if(data.url) window.location.href = data.url;
+    }
+</script>
 </body>
 </html>
