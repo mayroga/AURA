@@ -1,115 +1,54 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA by May Roga LLC - Asesor de Costos</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f9f9f9; }
-header { background:#007BFF; color:white; padding:15px; text-align:center; font-size:1.5em; font-weight:bold; }
-main { padding:20px; max-width:600px; margin: auto; }
-button { padding:10px 15px; margin:5px; cursor:pointer; border:none; border-radius:5px; font-size:1em; }
-#autopropaganda { background:#007BFF; color:white; padding:10px; text-align:center; margin:10px 0; overflow:hidden; white-space:nowrap; }
-#autopropaganda span { display:inline-block; padding-left:100%; animation:marquee 15s linear infinite; }
-@keyframes marquee { 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
-#resultado { background:white; padding:15px; border-radius:5px; margin-top:15px; min-height:50px; }
-#idiomaSelector { text-align:center; margin-bottom:15px; }
-</style>
-<script src="https://js.stripe.com/v3/"></script>
+    <meta charset="UTF-8">
+    <title>Aura - Estimados de Salud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f7f7f7; margin:0; padding:0;}
+        header { background-color: #0b5cff; color:white; padding:15px; text-align:center; }
+        .marquee { background-color: #0b5cff; color: #fff; padding: 10px; overflow:hidden; white-space: nowrap; box-sizing:border-box; }
+        .marquee span { display:inline-block; padding-left:100%; animation: marquee 15s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
+        .container { padding:20px; max-width:600px; margin:auto;}
+        input, select, button { width:100%; padding:10px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
+        button { background-color: #0b5cff; color:white; border:none; cursor:pointer; }
+        button:hover { background-color: #094bb5; }
+        .result { background-color: #e2f0fb; padding:10px; border-radius:5px; margin-top:10px; }
+        .language-btn { margin:5px; padding:5px 10px; background-color:#fff; color:#0b5cff; border:1px solid #0b5cff; cursor:pointer; border-radius:5px; display:inline-block;}
+    </style>
 </head>
 <body>
 
-<header>AURA by May Roga LLC</header>
+<header>
+    <h1 id="title">Aura - Estimados de Salud</h1>
+</header>
 
-<div id="autopropaganda"><span>AURA by May Roga LLC - Asesor de Costos Dentales y Médicos | Calcula precios reales según tu zona y seguro | Beneficios: ahorro, transparencia y confianza</span></div>
+<div class="marquee"><span id="marquee-text">Bienvenido a Aura! Obtén estimados de salud rápidos y confiables. Descubre los beneficios de nuestro sistema.</span></div>
 
-<div id="idiomaSelector">
-<button onclick="cambiarIdioma('es')">Español</button>
-<button onclick="cambiarIdioma('en')">English</button>
-<button onclick="cambiarIdioma('creole')">Kreyòl</button>
+<div class="container">
+    <div>
+        <span>Idioma:</span>
+        <button class="language-btn" onclick="setLanguage('es')">ES</button>
+        <button class="language-btn" onclick="setLanguage('en')">EN</button>
+        <button class="language-btn" onclick="setLanguage('ht')">CREOL</button>
+    </div>
+
+    <input type="text" id="state" placeholder="Estado (ej: FL)">
+    <input type="text" id="zip" placeholder="Código ZIP">
+    <input type="text" id="code" placeholder="Código de procedimiento">
+    <select id="plan">
+        <option value="BASIC">Básico</option>
+        <option value="TRIAL">Prueba</option>
+        <option value="PREMIUM">Premium</option>
+    </select>
+
+    <button onclick="getEstimate()">Obtener Estimado</button>
+
+    <div id="result" class="result" style="display:none;"></div>
 </div>
 
-<main>
-<label for="prompt">Escribe tu solicitud de estimado:</label><br>
-<textarea id="prompt" rows="4" style="width:100%;"></textarea><br>
-
-<label for="plan">Selecciona plan:</label><br>
-<select id="plan" style="width:100%; padding:8px; margin:5px 0;">
-  <option value="trial">Prueba $1.99</option>
-  <option value="basic">Básico $7.99</option>
-  <option value="special">Pago Especial 1h $14.99</option>
-  <option value="subscription">Suscripción Mensual $8.99</option>
-  <option value="loyalty">Bono de Lealtad $0.99</option>
-</select><br>
-
-<button onclick="solicitarEstimado()">Obtener Estimado</button>
-<button onclick="pagarPlan()">Pagar Plan / Suscripción</button>
-<button onclick="hacerDonacion()">Donar</button>
-
-<div id="resultado"></div>
-</main>
-
-<script>
-let idiomaActual = 'es'; // Español por defecto
-const BASE_URL = "https://aura-iyxa.onrender.com";
-
-// Detecta idioma automáticamente
-function detectarIdioma(texto) {
-  texto = texto.toLowerCase();
-  if(texto.includes('hello')||texto.includes('hi')||texto.includes('thanks')) return 'en';
-  if(texto.includes('bonjou')||texto.includes('mèsi')) return 'creole';
-  return 'es';
-}
-
-// Cambiar idioma manualmente
-function cambiarIdioma(lang) {
-  idiomaActual = lang;
-  alert(lang === 'es' ? "Idioma cambiado a Español" : lang==='en'? "Language changed to English" : "Lang chanje Kreyòl");
-}
-
-// Solicitar estimado al backend
-async function solicitarEstimado() {
-  const prompt = document.getElementById("prompt").value;
-  const plan = document.getElementById("plan").value;
-  if(!prompt) { alert(idiomaActual==='es'?'Escribe algo':'en'==idiomaActual?'Type something':'Tanpri ekri yon bagay'); return; }
-  const userId = "user_" + Math.floor(Math.random()*1000000); // ID aleatorio temporal
-
-  const response = await fetch(`${BASE_URL}/estimado`, {
-    method:"POST",
-    headers: { "Content-Type":"application/x-www-form-urlencoded" },
-    body: `usuario_id=${userId}&plan=${plan}&prompt=${encodeURIComponent(prompt)}`
-  });
-
-  const data = await response.json();
-  let texto = data.estimado || (idiomaActual==='es'?'Error':'en'==idiomaActual?'Error':'Erè');
-  document.getElementById("resultado").innerText = texto;
-}
-
-// Pagar plan / suscripción
-async function pagarPlan() {
-  const plan = document.getElementById("plan").value;
-  const response = await fetch(`${BASE_URL}/create-checkout-session`, {
-    method:"POST",
-    headers: { "Content-Type":"application/x-www-form-urlencoded" },
-    body: `plan=${plan}`
-  });
-  const data = await response.json();
-  if(data.url) { window.location.href = data.url; }
-}
-
-// Donación
-async function hacerDonacion() {
-  let cantidad = prompt(idiomaActual==='es'?'Ingrese cantidad en USD':'en'==idiomaActual?'Enter amount in USD':'Mete kantite nan USD');
-  if(!cantidad) return;
-  const response = await fetch(`${BASE_URL}/donacion`, {
-    method:"POST",
-    headers: { "Content-Type":"application/x-www-form-urlencoded" },
-    body: `cantidad=${cantidad}`
-  });
-  const data = await response.json();
-  if(data.url) window.location.href = data.url;
-}
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
