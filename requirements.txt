@@ -1,11 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 stripe
-pymongo
 python-dotenv
-httpx
-requests
-psycopg2-binary
-typing-extensions
-openai
 python-multipart
+google-generativeai
+openai
