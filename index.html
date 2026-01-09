@@ -2,53 +2,89 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Aura - Estimados de Salud</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
+    <title>SmartCargo - Pago de Planes</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f7f7f7; margin:0; padding:0;}
-        header { background-color: #0b5cff; color:white; padding:15px; text-align:center; }
-        .marquee { background-color: #0b5cff; color: #fff; padding: 10px; overflow:hidden; white-space: nowrap; box-sizing:border-box; }
-        .marquee span { display:inline-block; padding-left:100%; animation: marquee 15s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
-        .container { padding:20px; max-width:600px; margin:auto;}
-        input, select, button { width:100%; padding:10px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
-        button { background-color: #0b5cff; color:white; border:none; cursor:pointer; }
-        button:hover { background-color: #094bb5; }
-        .result { background-color: #e2f0fb; padding:10px; border-radius:5px; margin-top:10px; }
-        .language-btn { margin:5px; padding:5px 10px; background-color:#fff; color:#0b5cff; border:1px solid #0b5cff; cursor:pointer; border-radius:5px; display:inline-block;}
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; text-align:center; }
+        h1 { margin-bottom: 20px; }
+        .autopropaganda { margin-bottom: 30px; font-size:18px; }
+        .plan-btn { padding:15px 30px; margin:10px; font-size:16px; cursor:pointer; border:none; border-radius:5px; color:#fff; }
+        #trial { background-color:#6c757d; }
+        #basic { background-color:#0b5cff; }
+        #premium { background-color:#28a745; }
+        select { margin-bottom:20px; padding:5px; font-size:16px; }
     </style>
 </head>
 <body>
+    <h1 id="title">Bienvenido a SmartCargo</h1>
+    <div class="autopropaganda" id="autopropaganda">Protege tu dinero y tu carga 🚛</div>
 
-<header>
-    <h1 id="title">Aura - Estimados de Salud</h1>
-</header>
-
-<div class="marquee"><span id="marquee-text">Bienvenido a Aura! Obtén estimados de salud rápidos y confiables. Descubre los beneficios de nuestro sistema.</span></div>
-
-<div class="container">
-    <div>
-        <span>Idioma:</span>
-        <button class="language-btn" onclick="setLanguage('es')">ES</button>
-        <button class="language-btn" onclick="setLanguage('en')">EN</button>
-        <button class="language-btn" onclick="setLanguage('ht')">CREOL</button>
-    </div>
-
-    <input type="text" id="state" placeholder="Estado (ej: FL)">
-    <input type="text" id="zip" placeholder="Código ZIP">
-    <input type="text" id="code" placeholder="Código de procedimiento">
-    <select id="plan">
-        <option value="BASIC">Básico</option>
-        <option value="TRIAL">Prueba</option>
-        <option value="PREMIUM">Premium</option>
+    <!-- Selector de idioma -->
+    <select id="langSelector">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="ht">Kreyòl Ayisyen</option>
     </select>
 
-    <button onclick="getEstimate()">Obtener Estimado</button>
+    <div>
+        <button class="plan-btn" id="trial">Trial - $0.99 / mes</button>
+        <button class="plan-btn" id="basic">Basic - $9.99 / mes</button>
+        <button class="plan-btn" id="premium">Premium - $19.99 / mes</button>
+    </div>
 
-    <div id="result" class="result" style="display:none;"></div>
-</div>
+    <script>
+        const BASE_URL = "https://aura-iyxa.onrender.com";
+        const priceIds = {
+            "TRIAL": "price_1SnYkMBOA5mT4t0P2Ra3NpYy",
+            "BASIC": "price_1SnYuABOA5mT4t0Pv706amhC",
+            "PREMIUM": "price_1SnZ0eBOA5mT4t0Phwt58d4k"
+        };
 
-<script src="app.js"></script>
+        // Cambio de idioma
+        document.getElementById("langSelector").addEventListener("change", (e) => {
+            const lang = e.target.value;
+            const title = document.getElementById("title");
+            const ad = document.getElementById("autopropaganda");
+
+            if (lang === "es") {
+                title.innerText = "Bienvenido a SmartCargo";
+                ad.innerText = "Protege tu dinero y tu carga 🚛";
+            } else if (lang === "en") {
+                title.innerText = "Welcome to SmartCargo";
+                ad.innerText = "Protect your money and cargo 🚛";
+            } else {
+                title.innerText = "Byenveni nan SmartCargo";
+                ad.innerText = "Pwoteje lajan ou ak chaj ou 🚛";
+            }
+        });
+
+        async function checkout(planKey) {
+            try {
+                const priceId = priceIds[planKey];
+                if (!priceId) { alert("Plan inválido"); return; }
+
+                const data = new FormData();
+                data.append("price_id", priceId);
+
+                const resp = await fetch(`${BASE_URL}/create-checkout-session`, {
+                    method: "POST",
+                    body: data
+                });
+
+                const session = await resp.json();
+                if (session.url) {
+                    window.location.href = session.url;
+                } else {
+                    alert("Error al crear sesión de pago.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Ocurrió un error en el pago.");
+            }
+        }
+
+        document.getElementById("trial").addEventListener("click", () => checkout("TRIAL"));
+        document.getElementById("basic").addEventListener("click", () => checkout("BASIC"));
+        document.getElementById("premium").addEventListener("click", () => checkout("PREMIUM"));
+    </script>
 </body>
 </html>
