@@ -3,7 +3,7 @@ import sqlite3
 import stripe
 from datetime import datetime
 from fastapi import FastAPI, Form, Depends, HTTPException, status
-from fastapi.responses import JSONResponse  # Importación correcta para evitar el ImportError
+from fastapi.responses import JSONResponse, HTMLResponse  # Importaciones para Python 3.13
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from dotenv import load_dotenv
@@ -35,12 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- BASE DE DATOS (Carga desde tu cost_estimates.sql) ---
+# --- INICIALIZACIÓN DE BASE DE DATOS ---
 def init_db():
-    # Usamos SQLite en memoria para máxima velocidad de respuesta
     conn = sqlite3.connect(':memory:', check_same_thread=False)
     try:
-        # Buscamos tu archivo SQL en la raíz del proyecto
         sql_path = 'cost_estimates.sql'
         if os.path.exists(sql_path):
             with open(sql_path, 'r', encoding='utf-8') as f:
@@ -54,20 +52,17 @@ def init_db():
 
 db_conn = init_db()
 
-def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
-    if credentials.username != ADMIN_USER or credentials.password != ADMIN_PASS:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Acceso Denegado",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
+# --- CARGA DE INTERFAZ VISUAL ---
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    # Este endpoint hace que al entrar a la URL se vea el index.html
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"<h1>Error: No se encontró el archivo index.html</h1><p>{str(e)}</p>"
 
-# --- ENDPOINTS ---
-
-@app.get("/")
-async def root():
-    return {"empresa": "May Roga LLC", "app": "Aura", "status": "Online"}
+# --- ENDPOINTS DE SERVICIO ---
 
 @app.post("/estimado")
 async def obtener_estimado(
@@ -78,7 +73,7 @@ async def obtener_estimado(
     dia_actual = datetime.now().day
     plan = plan_type.lower()
     
-    # Lógica de tiempos de acceso Aura
+    # Lógica de tiempos de acceso Aura (Resolviendo necesidad real)
     if plan == "rapido":
         tiempo = 7
     elif plan == "standard":
@@ -88,7 +83,6 @@ async def obtener_estimado(
     else:
         return JSONResponse(content={"error": "Plan no válido"}, status_code=400)
 
-    # Consulta directa a los datos de Aura
     cursor = db_conn.cursor()
     query = "SELECT description, low_price, high_price, state FROM cost_estimates WHERE cpt_code = ? AND zip_code = ?"
     cursor.execute(query, (code.upper(), zip_code))
@@ -107,7 +101,7 @@ async def obtener_estimado(
     return JSONResponse(
         content={
             "empresa": "Aura by May Roga LLC",
-            "error": "Código no localizado. Por favor, verifique el código CPT/CDT.",
+            "error": "Código no localizado en esta zona.",
             "tiempo_concedido": f"{tiempo} min"
         }, 
         status_code=404
@@ -131,26 +125,16 @@ async def create_checkout_session(plan: str = Form(...)):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-@app.post("/donacion")
-async def crear_donacion(amount: int = Form(...)):
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": "Donación Solidaria - Aura",
-                        "description": "Fondo para herramientas de trabajo y cadena de favores."
-                    },
-                    "unit_amount": amount * 100,
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url="https://aura-iyxa.onrender.com/?success=true",
-            cancel_url="https://aura-iyxa.onrender.com/?cancel=true"
+# --- SEGURIDAD ADMIN ---
+def get_current_user(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
+    if credentials.username != ADMIN_USER or credentials.password != ADMIN_PASS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acceso Denegado",
+            headers={"WWW-Authenticate": "Basic"},
         )
-        return {"url": session.url}
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+    return credentials.username
+
+@app.get("/admin/status")
+async def check_status(username: str = Depends(get_current_user)):
+    return {"sistema": "Aura Online", "admin": username}
