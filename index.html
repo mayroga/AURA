@@ -2,21 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SmartCargo - Pago de Planes</title>
+    <title>Aura by May Roga LLC - Pago de Planes</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; text-align:center; }
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f7f7f7; 
+            text-align: center; 
+        }
         h1 { margin-bottom: 20px; }
-        .autopropaganda { margin-bottom: 30px; font-size:18px; }
-        .plan-btn { padding:15px 30px; margin:10px; font-size:16px; cursor:pointer; border:none; border-radius:5px; color:#fff; }
-        #trial { background-color:#6c757d; }
-        #basic { background-color:#0b5cff; }
-        #premium { background-color:#28a745; }
-        select { margin-bottom:20px; padding:5px; font-size:16px; }
+        .autopropaganda { margin-bottom: 30px; font-size: 18px; }
+        .plan-btn { 
+            padding: 15px 30px; 
+            margin: 10px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 5px; 
+            color: #fff; 
+        }
+        #trial { background-color: #6c757d; }
+        #basic { background-color: #0b5cff; }
+        #premium { background-color: #28a745; }
+        select { margin-bottom: 20px; padding: 5px; font-size: 16px; }
     </style>
 </head>
 <body>
-    <h1 id="title">Bienvenido a SmartCargo</h1>
-    <div class="autopropaganda" id="autopropaganda">Protege tu dinero y tu carga 🚛</div>
+    <h1 id="title">Bienvenido a Aura by May Roga LLC</h1>
+    <div class="autopropaganda" id="autopropaganda">Bienestar y protección natural 🌿</div>
 
     <!-- Selector de idioma -->
     <select id="langSelector">
@@ -46,14 +59,14 @@
             const ad = document.getElementById("autopropaganda");
 
             if (lang === "es") {
-                title.innerText = "Bienvenido a SmartCargo";
-                ad.innerText = "Protege tu dinero y tu carga 🚛";
+                title.innerText = "Bienvenido a Aura by May Roga LLC";
+                ad.innerText = "Bienestar y protección natural 🌿";
             } else if (lang === "en") {
-                title.innerText = "Welcome to SmartCargo";
-                ad.innerText = "Protect your money and cargo 🚛";
+                title.innerText = "Welcome to Aura by May Roga LLC";
+                ad.innerText = "Natural wellness and protection 🌿";
             } else {
-                title.innerText = "Byenveni nan SmartCargo";
-                ad.innerText = "Pwoteje lajan ou ak chaj ou 🚛";
+                title.innerText = "Byenveni nan Aura by May Roga LLC";
+                ad.innerText = "Byennèt natirèl ak pwoteksyon 🌿";
             }
         });
 
