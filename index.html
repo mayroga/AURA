@@ -18,7 +18,7 @@
         .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 30px; margin-top: 40px; }
         .btn-donar { background: #ffff00; color: #000; border: none; padding: 20px; border-radius: 15px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
         .res-box { text-align: left; padding: 25px; border: 1px dashed #00d4ff; background: #050505; margin-top: 25px; font-size: 1.2rem; line-height: 1.6; }
-        .btn-ex { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
+        .btn-ex { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
     </style>
 </head>
 <body>
@@ -52,14 +52,24 @@
     </div>
 
     <div id="sistema-aura" style="display:none;">
-        <button onclick="listen()" style="font-size:4rem; background:none; border:none; cursor:pointer;">🎤</button>
+        <div style="margin-bottom: 25px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-ex" style="background:#00d4ff; color:#000; border:2px solid #fff;" onclick="changeLang('es')">ESPAÑOL</button>
+            <button class="btn-ex" style="background:#fff; color:#000; border:2px solid #00d4ff;" onclick="changeLang('en')">ENGLISH</button>
+            <button class="btn-ex" style="background:#ff4444; color:#fff; border:2px solid #fff;" onclick="changeLang('ht')">KREYÒL</button>
+        </div>
+
+        <button onclick="listen()" style="font-size:5rem; background:none; border:none; cursor:pointer; filter: drop-shadow(0 0 10px #00d4ff);">🎤</button>
+        <p id="status-lang" style="color:#00d4ff; font-weight:bold;">Idioma: Español</p>
+        
         <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
-        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.6rem;">REVELAR MI AHORRO</button>
+        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; background:#00d4ff; color:#000; box-shadow: 0 0 20px #00d4ff;">REVELAR MI AHORRO</button>
+        
         <div id="res" class="res-box"></div>
-        <div id="export-bar" style="display:none; margin-top:15px;">
-            <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
-            <button class="btn-ex" style="background:#ff4444;" onclick="window.print()">PDF / Imprimir 🛡️</button>
-            <button class="btn-ex" style="background:#ffff00; color:black;" onclick="readOut()">🔊 Escuchar</button>
+        
+        <div id="export-bar" style="display:none; margin-top:20px;">
+            <button class="btn-ex" style="background:#25d366; color:white;" onclick="shareWA()">WhatsApp 🛡️</button>
+            <button class="btn-ex" style="background:#ff4444; color:white;" onclick="window.print()">Imprimir PDF 🛡️</button>
+            <button class="btn-ex" style="background:#ffff00; color:#000;" onclick="readOut()">🔊 Escuchar Reporte</button>
         </div>
     </div>
 
@@ -70,6 +80,20 @@
 </div>
 
 <script>
+    let currentLang = 'es';
+
+    function changeLang(lang) {
+        currentLang = lang;
+        const names = { 'es': 'Español', 'en': 'English', 'ht': 'Kreyòl (Creole)' };
+        document.getElementById('status-lang').innerText = "Idioma: " + names[lang];
+        const placeholders = {
+            'es': '¿Qué necesitas ahorrar?',
+            'en': 'What do you need to save on?',
+            'ht': 'Kisa ou bezwen ekonomize?'
+        };
+        document.getElementById('q').placeholder = placeholders[lang];
+    }
+
     async function validaAdmin() {
         const fd = new FormData();
         fd.append("user", document.getElementById('adm_u').value);
@@ -88,12 +112,21 @@
 
     async function getEstimate() {
         const q = document.getElementById('q').value;
-        document.getElementById('res').innerText = "Aura consultando fuentes oficiales...";
-        const fd = new FormData(); fd.append("consulta", q);
-        const res = await fetch("/estimado", { method: "POST", body: fd });
-        const data = await res.json();
-        document.getElementById('res').innerText = data.resultado;
-        document.getElementById('export-bar').style.display = 'block';
+        if(!q) return;
+        document.getElementById('res').innerHTML = "<h2 style='color:#ffff00;'>Aura localizando ahorro real...</h2>";
+        
+        const fd = new FormData();
+        fd.append("consulta", q);
+        fd.append("lang", currentLang);
+
+        try {
+            const res = await fetch("/estimado", { method: "POST", body: fd });
+            const data = await res.json();
+            document.getElementById('res').innerText = data.resultado;
+            document.getElementById('export-bar').style.display = 'block';
+        } catch (e) {
+            document.getElementById('res').innerText = "Error de conexión. Reintente.";
+        }
     }
 
     function shareWA() {
@@ -102,8 +135,12 @@
     }
 
     function readOut() {
-        const u = new SpeechSynthesisUtterance(document.getElementById('res').innerText);
-        window.speechSynthesis.speak(u);
+        const text = document.getElementById('res').innerText;
+        const ut = new SpeechSynthesisUtterance(text);
+        if(currentLang === 'es') ut.lang = 'es-US';
+        else if(currentLang === 'en') ut.lang = 'en-US';
+        else if(currentLang === 'ht') ut.lang = 'fr-FR'; 
+        window.speechSynthesis.speak(ut);
     }
 
     async function pagar(plan) {
@@ -116,6 +153,7 @@
 
     function listen() {
         const rec = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+        rec.lang = currentLang === 'es' ? 'es-US' : (currentLang === 'en' ? 'en-US' : 'fr-FR');
         rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; };
         rec.start();
     }
