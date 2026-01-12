@@ -11,88 +11,10 @@ CREATE TABLE cost_estimates (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- INSERTS ESTADOS A - M
-INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price) VALUES
--- ALABAMA (AL)
-('D1110','Limpieza Adulto','AL','35004',70,140),('D2750','Corona Porcelana','AL','35004',750,1400),('99213','Consulta Médica','AL','35004',90,180),
--- ALASKA (AK)
-('D1110','Limpieza Adulto','AK','99501',85,170),('D2750','Corona Porcelana','AK','99501',900,1600),('99213','Consulta Médica','AK','99501',110,220),
--- ARIZONA (AZ)
-('D1110','Limpieza Adulto','AZ','85001',75,150),('D2750','Corona Porcelana','AZ','85001',800,1450),('99213','Consulta Médica','AZ','85001',95,190),
--- ARKANSAS (AR)
-('D1110','Limpieza Adulto','AR','72201',68,135),('D2750','Corona Porcelana','AR','72201',740,1380),('99213','Consulta Médica','AR','72201',85,170),
--- CALIFORNIA (CA)
-('D1110','Limpieza Adulto','CA','90001',95,190),('D2750','Corona Porcelana','CA','90001',950,1800),('99213','Consulta Médica','CA','90001',120,250),
--- COLORADO (CO)
-('D1110','Limpieza Adulto','CO','80201',80,160),('D2750','Corona Porcelana','CO','80201',850,1500),('99213','Consulta Médica','CO','80201',100,210),
--- CONNECTICUT (CT)
-('D1110','Limpieza Adulto','CT','06101',88,175),('D2750','Corona Porcelana','CT','06101',880,1550),('99213','Consulta Médica','CT','06101',110,230),
--- DELAWARE (DE)
-('D1110','Limpieza Adulto','DE','19901',78,155),('D2750','Corona Porcelana','DE','19901',820,1480),('99213','Consulta Médica','DE','19901',95,200),
--- FLORIDA (FL)
-('D1110','Limpieza Adulto','FL','33101',85,165),('D2750','Corona Porcelana','FL','33101',850,1550),('99213','Consulta Médica','FL','33101',100,210),
--- GEORGIA (GA)
-('D1110','Limpieza Adulto','GA','30301',76,155),('D2750','Corona Porcelana','GA','30301',810,1490),('99213','Consulta Médica','GA','30301',95,195),
--- HAWAII (HI)
-('D1110','Limpieza Adulto','HI','96801',98,190),('D2750','Corona Porcelana','HI','96801',980,1750),('99213','Consulta Médica','HI','96801',130,260),
--- IDAHO (ID)
-('D1110','Limpieza Adulto','ID','83201',72,145),('D2750','Corona Porcelana','ID','83201',780,1420),('99213','Consulta Médica','ID','83201',90,185),
--- ILLINOIS (IL)
-('D1110','Limpieza Adulto','IL','60601',82,165),('D2750','Corona Porcelana','IL','60601',860,1550),('99213','Consulta Médica','IL','60601',105,215),
--- INDIANA (IN)
-('D1110','Limpieza Adulto','IN','46201',74,150),('D2750','Corona Porcelana','IN','46201',790,1440),('99213','Consulta Médica','IN','46201',92,185),
--- IOWA (IA)
-('D1110','Limpieza Adulto','IA','50301',71,142),('D2750','Corona Porcelana','IA','50301',760,1410),('99213','Consulta Médica','IA','50301',88,175),
--- KANSAS (KS)
-('D1110','Limpieza Adulto','KS','66101',73,148),('D2750','Corona Porcelana','KS','66101',785,1430),('99213','Consulta Médica','KS','66101',90,180),
--- KENTUCKY (KY)
-('D1110','Limpieza Adulto','KY','40201',70,140),('D2750','Corona Porcelana','KY','40201',750,1400),('99213','Consulta Médica','KY','40201',85,175),
--- LOUISIANA (LA)
-('D1110','Limpieza Adulto','LA','70112',75,155),('D2750','Corona Porcelana','LA','70112',810,1480),('99213','Consulta Médica','LA','70112',95,200),
--- MAINE (ME)
-('D1110','Limpieza Adulto','ME','04101',79,160),('D2750','Corona Porcelana','ME','04101',840,1520),('99213','Consulta Médica','ME','04101',100,210),
--- MARYLAND (MD)
-('D1110','Limpieza Adulto','MD','21201',85,170),('D2750','Corona Porcelana','MD','21201',890,1600),('99213','Consulta Médica','MD','21201',110,230),
--- MASSACHUSETTS (MA)
-('D1110','Limpieza Adulto','MA','02101',95,195),('D2750','Corona Porcelana','MA','02101',980,1850),('99213','Consulta Médica','MA','02101',125,260),
--- MICHIGAN (MI)
-('D1110','Limpieza Adulto','MI','48201',78,160),('D2750','Corona Porcelana','MI','48201',830,1500),('99213','Consulta Médica','MI','48201',100,205),
--- MINNESOTA (MN)
-('D1110','Limpieza Adulto','MN','55401',82,165),('D2750','Corona Porcelana','MN','55401',860,1550),('99213','Consulta Médica','MN','55401',105,215),
--- MISSISSIPPI (MS)
-('D1110','Limpieza Adulto','MS','39201',65,130),('D2750','Corona Porcelana','MS','39201',710,1350),('99213','Consulta Médica','MS','39201',80,160),
--- MISSOURI (MO)
-('D1110','Limpieza Adulto','MO','63101',74,150),('D2750','Corona Porcelana','MO','63101',790,1450),('99213','Consulta Médica','MO','63101',90,190),
--- MONTANA (MT)
-('D1110','Limpieza Adulto','MT','59101',70,145),('D2750','Corona Porcelana','MT','59101',760,1400),('99213','Consulta Médica','MT','59101',85,175);
--- INSERTS ESTADOS N - Z
-INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price) VALUES
--- NEBRASKA (NE)
-('D1110','Limpieza Adulto','NE','68101',70,145),('D2750','Corona Porcelana','NE','68101',760,1410),('99213','Consulta Médica','NE','68101',88,180),
--- NEVADA (NV)
-('D1110','Limpieza Adulto','NV','89101',82,165),('D2750','Corona Porcelana','NV','89101',880,1550),('99213','Consulta Médica','NV','89101',105,210),
--- NEW JERSEY (NJ)
-('D1110','Limpieza Adulto','NJ','07101',92,185),('D2750','Corona Porcelana','NJ','07101',940,1750),('99213','Consulta Médica','NJ','07101',120,240),
--- NEW YORK (NY)
-('D1110','Limpieza Adulto','NY','10001',105,210),('D2750','Corona Porcelana','NY','10001',1100,2100),('99213','Consulta Médica','NY','10001',140,290),
--- NORTH CAROLINA (NC)
-('D1110','Limpieza Adulto','NC','27601',78,160),('D2750','Corona Porcelana','NC','27601',830,1500),('99213','Consulta Médica','NC','27601',100,205),
--- OHIO (OH)
-('D1110','Limpieza Adulto','OH','43201',75,155),('D2750','Corona Porcelana','OH','43201',800,1480),('99213','Consulta Médica','OH','43201',95,195),
--- PENNSYLVANIA (PA)
-('D1110','Limpieza Adulto','PA','19101',84,170),('D2750','Corona Porcelana','PA','19101',880,1600),('99213','Consulta Médica','PA','19101',110,225),
--- TEXAS (TX)
-('D1110','Limpieza Adulto','TX','73301',82,165),('D2750','Corona Porcelana','TX','73301',870,1580),('99213','Consulta Médica','TX','73301',105,215),
--- UTAH (UT)
-('D1110','Limpieza Adulto','UT','84101',76,155),('D2750','Corona Porcelana','UT','84101',810,1490),('99213','Consulta Médica','UT','84101',95,195),
--- VIRGINIA (VA)
-('D1110','Limpieza Adulto','VA','23218',80,165),('D2750','Corona Porcelana','VA','23218',850,1550),('99213','Consulta Médica','VA','23218',105,220),
--- WASHINGTON (WA)
-('D1110','Limpieza Adulto','WA','98101',92,185),('D2750','Corona Porcelana','WA','98101',940,1700),('99213','Consulta Médica','WA','98101',120,245),
--- WYOMING (WY)
-('D1110','Limpieza Adulto','WY','82001',70,145),('D2750','Corona Porcelana','WY','82001',770,1420),('99213','Consulta Médica','WY','82001',88,180);
+-- =========================================================
 -- PARTE 1: ALABAMA, ALASKA, ARIZONA, ARKANSAS, CALIFORNIA
--- COBERTURA: DENTAL, MÉDICA, PSICOLOGÍA, TERAPIA Y RAYOS X
+-- INCLUYE: DENTAL, MÉDICA, PSICOLOGÍA, TERAPIA Y RAYOS X
+-- =========================================================
 
 INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price) VALUES
 -- ALABAMA (AL)
@@ -100,17 +22,17 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('D2750','Corona Porcelana','AL','35203',800,1500),
 ('D7140','Extracción Simple de Muela','AL','35203',130,280),
 ('99213','Consulta Médica General','AL','35203',95,190),
-('99401','Consulta Preventiva (30 min)','AL','35203',80,160),
 ('90834','Psicoterapia Individual (45 min)','AL','35203',100,210),
-('90837','Psicoterapia Individual (60 min)','AL','35203',130,260),
 ('97110','Terapia Física (Ejercicios)','AL','35203',85,170),
-('97140','Terapia Manual / Masaje Terapéutico','AL','35203',75,155),
-('71045','Rayos X de Tórax (Pecho)','AL','35203',70,180),
+('71045','Rayos X de Tórax','AL','35203',70,180),
 ('76700','Ultrasonido Abdominal','AL','35203',220,500),
 ('80053','Panel Metabólico (Sangre)','AL','35203',35,90),
-('85025','Hemograma Completo (CBC)','AL','35203',25,65),
-('93000','Electrocardiograma (EKG)','AL','35203',60,150),
 ('99283','Visita Urgencias (Nivel Medio)','AL','35203',450,1100),
+('D0210','Rayos X Dentales Completos','AL','35203',90,180),
+('90791','Evaluación Psicológica Inicial','AL','35203',150,300),
+('93000','Electrocardiograma (EKG)','AL','35203',60,150),
+('D2330','Empaste Dental (Resina)','AL','35203',110,230),
+('99214','Consulta Médica Compleja','AL','35203',130,260),
 
 -- ALASKA (AK)
 ('D1110','Limpieza Dental Adulto','AK','99501',110,210),
@@ -118,16 +40,11 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('D7140','Extracción Simple de Muela','AK','99501',200,420),
 ('99213','Consulta Médica General','AK','99501',145,290),
 ('90834','Psicoterapia Individual (45 min)','AK','99501',160,320),
-('90837','Psicoterapia Individual (60 min)','AK','99501',210,410),
-('97110','Terapia Física (Ejercicios)','AK','99501',130,260),
-('71045','Rayos X de Tórax (Pecho)','AK','99501',110,280),
+('97110','Terapia Física','AK','99501',130,260),
 ('76700','Ultrasonido Abdominal','AK','99501',350,850),
-('80053','Panel Metabólico (Sangre)','AK','99501',60,140),
-('99283','Visita Urgencias (Nivel Medio)','AK','99501',850,2200),
-('99204','Consulta Especialista (Nuevo)','AK','99501',250,550),
-('D0210','Serie Completa de Rayos X Dental','AK','99501',140,280),
+('99283','Visita Urgencias','AK','99501',850,2200),
+('80053','Panel Metabólico','AK','99501',60,140),
 ('90791','Evaluación Psicológica Inicial','AK','99501',240,480),
-('97112','Terapia Neuromuscular','AK','99501',140,290),
 
 -- ARIZONA (AZ)
 ('D1110','Limpieza Dental Adulto','AZ','85001',85,170),
@@ -135,16 +52,11 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('D7140','Extracción Simple de Muela','AZ','85001',145,310),
 ('99213','Consulta Médica General','AZ','85001',105,220),
 ('90834','Psicoterapia Individual (45 min)','AZ','85001',120,240),
-('90837','Psicoterapia Individual (60 min)','AZ','85001',160,310),
-('97110','Terapia Física (Ejercicios)','AZ','85001',95,190),
-('71045','Rayos X de Tórax (Pecho)','AZ','85001',85,210),
+('97110','Terapia Física','AZ','85001',95,190),
 ('76700','Ultrasonido Abdominal','AZ','85001',280,620),
-('80053','Panel Metabólico (Sangre)','AZ','85001',40,110),
-('99283','Visita Urgencias (Nivel Medio)','AZ','85001',550,1400),
-('D0120','Examen Dental Periódico','AZ','85001',55,120),
-('D4341','Limpieza Profunda (Raspado por Cuadrante)','AZ','85001',220,450),
-('90847','Terapia Familiar / Pareja','AZ','85001',150,300),
-('97014','Estimulación Eléctrica (Terapia)','AZ','85001',60,130),
+('99283','Visita Urgencias','AZ','85001',550,1400),
+('D4341','Limpieza Profunda (Raspado)','AZ','85001',220,450),
+('90847','Terapia Familiar','AZ','85001',150,300),
 
 -- ARKANSAS (AR)
 ('D1110','Limpieza Dental Adulto','AR','72201',70,140),
@@ -152,16 +64,6 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('D7140','Extracción Simple de Muela','AR','72201',125,260),
 ('99213','Consulta Médica General','AR','72201',90,185),
 ('90834','Psicoterapia Individual (45 min)','AR','72201',105,215),
-('97110','Terapia Física (Ejercicios)','AR','72201',80,165),
-('71045','Rayos X de Tórax (Pecho)','AR','72201',75,190),
-('76700','Ultrasonido Abdominal','AR','72201',240,550),
-('80053','Panel Metabólico (Sangre)','AR','72201',35,95),
-('99283','Visita Urgencias (Nivel Medio)','AR','72201',480,1200),
-('D2330','Empaste Dental (Resina 1 superficie)','AR','72201',110,230),
-('99214','Consulta Médica (Compleja)','AR','72201',140,290),
-('90846','Terapia Familiar (Sin el paciente)','AR','72201',110,230),
-('97010','Aplicación de Calor o Frío (Terapia)','AR','72201',45,95),
-('76805','Ultrasonido de Embarazo (Completo)','AR','72201',310,700),
 
 -- CALIFORNIA (CA)
 ('D1110','Limpieza Dental Adulto','CA','90001',125,250),
@@ -171,14 +73,14 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('90834','Psicoterapia Individual (45 min)','CA','90001',180,360),
 ('90837','Psicoterapia Individual (60 min)','CA','90001',240,480),
 ('97110','Terapia Física (Ejercicios)','CA','90001',140,290),
-('71045','Rayos X de Tórax (Pecho)','CA','90001',120,310),
+('71045','Rayos X de Tórax','CA','90001',120,310),
 ('76700','Ultrasonido Abdominal','CA','90001',380,950),
 ('80053','Panel Metabólico (Sangre)','CA','90001',65,160),
 ('99283','Visita Urgencias (Nivel Medio)','CA','90001',950,2600),
-('99203','Consulta Especialista (Nuevo)','CA','90001',220,480),
-('70450','TAC de Cabeza / Cerebro (Sin contraste)','CA','90001',650,1800),
+('70450','TAC de Cabeza','CA','90001',650,1800),
 ('90791','Evaluación Psicológica Inicial','CA','90001',260,550),
-('D4341','Limpieza Profunda (Raspado por Cuadrante)','CA','90001',300,650);
+('D4341','Limpieza Profunda (Raspado)','CA','90001',300,650),
+('85025','Hemograma Completo','CA','90001',45,95);
 
 -- PARTE 2: COLORADO, CONNECTICUT, DELAWARE, FLORIDA
 -- COBERTURA: DENTAL, MÉDICA, PSICOLOGÍA, TERAPIA Y DIAGNÓSTICO
