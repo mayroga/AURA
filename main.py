@@ -1,19 +1,21 @@
 import os
 import stripe
 import smtplib
+import asyncio
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from email.mime.text import MIMEText
 import google.generativeai as genai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 app = FastAPI()
 
-# Configuración de Llaves y Seguridad
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client_openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # IDs de Stripe proporcionados
 PRICE_IDS = {
@@ -32,52 +34,58 @@ async def read_index():
 
 @app.post("/estimado")
 async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es")):
+    # BLINDAJE LEGAL IMPENETRABLE EXACTO
+    blindaje_exacto = "Este reporte es emitido por Aura by May Roga LLC, Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Reportamos datos de mercado públicos para el ahorro del consumidor."
+    
     prompt = f"""
     ERES EL ASESOR JEFE DE AURA BY MAY ROGA LLC. 
-    OBJETIVO: TRANSPARENCIA TOTAL PARA SIN SEGURO, POCO SEGURO Y BUSCADORES DE PRESTIGIO.
-    CONSULTA: "{consulta}" | IDIOMA: "{lang}"
-
-    REGLA DE ORO: EL REPORTE DEBE COMENZAR Y TERMINAR CON ESTE BLINDAJE:
-    "ESTE REPORTE ES EMITIDO POR AURA BY MAY ROGA LLC, AGENCIA INFORMATIVA INDEPENDIENTE. NO SOMOS MÉDICOS, NI SEGUROS, NI DAMOS DIAGNÓSTICOS. REPORTAMOS DATOS PÚBLICOS DE MERCADO PARA AHORRO DEL CONSUMIDOR."
-
-    ORDEN DEL REPORTE:
-    1. GANANCIA ESTIMADA (Dinero que el cliente deja de perder hoy).
-    2. ZONA DE CONFORT: 2 opciones locales en su área.
-    3. PRESTIGIO: La mejor opción por fama y reputación del estado.
-    4. AHORRO VECINO: 3 opciones en condados cercanos.
-    5. RUTA NACIONAL: Los 6 mejores precios de los 50 estados.
+    (PROHIBIDO usar la palabra 'IA' o 'Inteligencia Artificial').
     
-    ESTILO: Peras y manzanas. Usa: DINERO, GANANCIA, CONTROL.
-    """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        res = model.generate_content(prompt)
-        return {"resultado": res.text}
-    except:
-        return {"resultado": "Error en Aura. Reintente."}
+    OBJETIVO: Transparencia total para: 
+    1. Quienes no tienen seguro.
+    2. Quienes tienen seguro pero les cubre poco.
+    3. Quienes buscan lo mejor (Excelencia y Prestigio).
+    
+    Consulta: "{consulta}" | Idioma: "{lang}"
 
-@app.post("/enviar-email")
-async def enviar_email(destinatario: str = Form(...), contenido: str = Form(...)):
+    ESTRUCTURA DE RESPUESTA (BANDEJA DE PLATA):
+    1. BLINDAJE LEGAL: "{blindaje_exacto}"
+    2. GANANCIA ESTIMADA: Cuánto dinero gana el cliente al no pagar precios inflados.
+    3. PILAR 1 - TU ZONA: 2 opciones locales más baratas.
+    4. PILAR 2 - EXCELENCIA Y PRESTIGIO: La mejor opción en reputación del estado.
+    5. PILAR 3 - GANANCIA POR DISTANCIA: 3 opciones en condados vecinos.
+    6. PILAR 4 - RUTA NACIONAL: Los 6 mejores precios en los 50 estados de USA.
+    7. CIERRE: Repetir Blindaje Legal.
+    """
+
+    async def call_gemini():
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        return model.generate_content(prompt).text
+
+    async def call_openai():
+        response = client_openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "system", "content": "Eres el Asesor de Aura by May Roga LLC."}, {"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+
     try:
-        msg = MIMEText(contenido)
-        msg['Subject'] = 'REPORTE BLINDADO DE AHORRO - AURA BY MAY ROGA LLC'
-        msg['From'] = os.getenv("SENDER_EMAIL")
-        msg['To'] = destinatario
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(os.getenv("SENDER_EMAIL"), os.getenv("EMAIL_API_KEY"))
-            server.sendmail(os.getenv("SENDER_EMAIL"), destinatario, msg.as_string())
-        return {"status": "Enviado"}
+        try:
+            res_text = await asyncio.wait_for(call_gemini(), timeout=12.0)
+        except:
+            res_text = await call_openai()
+        
+        return {"resultado": res_text}
     except:
-        return JSONResponse(content={"error": "Error al enviar"}, status_code=500)
+        return {"resultado": "El Asesor de Aura está procesando sus datos. Por favor reintente."}
 
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
     try:
-        mode = "subscription" if plan.lower() == "special" else "payment"
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
-            mode=mode,
+            mode="payment",
             success_url="https://aura-iyxa.onrender.com/?success=true",
             cancel_url="https://aura-iyxa.onrender.com/"
         )
