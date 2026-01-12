@@ -9,7 +9,7 @@
         .container { max-width: 900px; margin: auto; background: #080808; border: 2px solid #00d4ff; border-radius: 35px; padding: 25px; box-shadow: 0 0 30px rgba(0, 212, 255, 0.3); }
         .brand-aura { color: #00d4ff; font-size: 4rem; font-weight: 900; letter-spacing: 5px; margin:0; }
         .company-yellow { color: #ffff00; font-weight: bold; font-size: 1.5rem; }
-        
+       
         /* Idiomas */
         .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px; }
         .btn-l { background: transparent; color: #00d4ff; border: 1px solid #00d4ff; padding: 5px 10px; cursor: pointer; border-radius: 5px; font-weight: bold; }
@@ -22,86 +22,68 @@
         /* Blindaje Legal */
         .legal-shield { background: #1a0000; border: 2px solid #ff0000; padding: 15px; font-size: 0.9rem; text-align: justify; border-radius: 15px; margin-bottom: 20px; }
 
-        /* Precios */
         .pricing { display: flex; gap: 10px; justify-content: space-around; margin-bottom: 20px; }
         .p-btn { flex: 1; background: #000; border: 2px solid #00d4ff; color: #fff; padding: 15px; border-radius: 15px; cursor: pointer; }
         .p-btn span { display: block; color: #ffff00; font-weight: bold; font-size: 1.3rem; }
 
-        /* Main */
         .main-box { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #00d4ff; }
         input { padding: 12px; border-radius: 10px; border: 1px solid #00d4ff; background: #000; color: #fff; width: 42%; margin: 5px; font-size: 1rem; }
         .btn-go { background: #00d4ff; color: #000; border: none; padding: 15px 30px; border-radius: 10px; font-weight: 900; cursor: pointer; width: 90%; margin-top: 10px; }
-
+       
         .voice-btn { background: #222; border: 1px solid #00d4ff; color: #00d4ff; width: 55px; height: 55px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; margin: 5px; }
-
-        /* Donación */
-        .donation-box { background: #001a33; border: 2px solid #ffff00; border-radius: 20px; padding: 25px; margin: 30px 0; }
-        .don-btn { background: #ffff00; color: #000; border: none; padding: 15px 40px; border-radius: 12px; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
-<div class="container">
 
-    <!-- Idiomas -->
+<div class="container">
     <div class="lang-bar">
         <button class="btn-l" onclick="setLang('es')">ES</button>
         <button class="btn-l" onclick="setLang('en')">EN</button>
         <button class="btn-l" onclick="setLang('ht')">HT</button>
     </div>
 
-    <!-- Marca -->
     <div class="brand-aura">AURA</div>
     <div class="brand-legal">by <span class="company-yellow">May Roga LLC</span></div>
 
-    <!-- Autopropaganda -->
     <div class="marquee-box">
         <div id="marquee" class="marquee-text">
-            🛡️ AURA LOCALIZA ESTIMADOS DE PRECIOS DE SERVICIOS DE SALUD Y OTROS MERCADOS. NO SOMOS MÉDICOS NI ASEGURADORAS. AHORRE DINERO AL NEGOCIAR DIRECTAMENTE CON PROVEEDORES.
+            🛡️ AURA LOCALIZA EL AHORRO • NO PAGUE PRECIOS OCULTOS • ASESORÍA DE PRECIOS EN USA • GANE DINERO AL NO PAGAR DE MÁS
         </div>
     </div>
 
-    <!-- Blindaje Legal -->
     <div id="legal" class="legal-shield">
-        BLINDAJE LEGAL: Aura by May Roga LLC es una Agencia Informativa de Mercado. No ofrecemos servicios médicos ni seguros. Proveemos inteligencia de precios y estimados de costos para que el cliente pueda negociar y ahorrar dinero de manera informada.
+        <strong>BLINDAJE IMPENETRABLE:</strong> Aura by May Roga LLC es una Agencia Informativa de Mercado. No ofrecemos servicios médicos ni seguros. Reportamos datos de precios para ahorro del consumidor.
     </div>
 
-    <!-- Botones de Pago -->
     <div class="pricing">
         <button class="p-btn" onclick="pay('rapido')"><b id="p1">C. Rápida</b><span>$5.99</span></button>
         <button class="p-btn" onclick="pay('standard')"><b id="p2">Standard</b><span>$9.99</span></button>
         <button class="p-btn" onclick="pay('special')"><b id="p3">Suscripción</b><span>$19.99</span></button>
     </div>
 
-    <!-- Entrada principal -->
     <div class="main-box">
-        <div>
-            <button class="voice-btn" onclick="listen()">🎤</button>
-            <button class="voice-btn" onclick="speak()">🔊</button>
-        </div>
+        <div><button class="voice-btn" onclick="listen()">🎤</button><button class="voice-btn" onclick="speak()">🔊</button></div>
         <input type="text" id="zip" placeholder="ZIP Code">
         <input type="text" id="q" placeholder="¿Qué servicio busca ahorrar?">
         <button id="btn-main" class="btn-go" onclick="getEstimate()">VER MI AHORRO ESTIMADO</button>
         <div id="res" style="margin-top: 25px; text-align: left; color: #00d4ff; font-weight: bold;"></div>
     </div>
 
-    <!-- Donación -->
-    <div class="donation-box">
+    <div style="background: #001a33; border: 2px solid #ffff00; border-radius: 20px; padding: 25px; margin: 30px 0;">
         <h3 id="don-title" style="color: #ffff00;">APOYO Y DONACIÓN PARA EMPLEOS</h3>
         <p id="don-text">Su aporte mantiene esta plataforma y ayuda al dueño a crear medios de trabajo.</p>
-        <button id="don-btn" class="don-btn" onclick="payDonation()">PAGAR DONACIÓN AHORA</button>
+        <button id="don-btn" onclick="pay('donacion')" style="background: #ffff00; color: #000; border: none; padding: 15px 40px; border-radius: 12px; font-weight: 900; cursor: pointer;">PAGAR DONACIÓN AHORA</button>
     </div>
 </div>
 
 <script>
     const API = "https://aura-iyxa.onrender.com";
     let currentLang = 'es';
-    let hasAccess = false; // Controla si el usuario ya pagó
 
-    // Traducciones
     const translations = {
         es: {
-            marquee: "🛡️ AURA LOCALIZA ESTIMADOS DE PRECIOS DE SERVICIOS DE SALUD Y OTROS MERCADOS. NO SOMOS MÉDICOS NI ASEGURADORAS. AHORRE DINERO AL NEGOCIAR DIRECTAMENTE CON PROVEEDORES.",
-            legal: "BLINDAJE LEGAL: Aura by May Roga LLC es una Agencia Informativa de Mercado. No ofrecemos servicios médicos ni seguros. Proveemos inteligencia de precios y estimados de costos para que el cliente pueda negociar y ahorrar dinero de manera informada.",
+            marquee: "🛡️ AURA LOCALIZA EL AHORRO • NO PAGUE PRECIOS OCULTOS • ASESORÍA DE PRECIOS EN USA • GANE DINERO AL NO PAGAR DE MÁS",
+            legal: "<strong>BLINDAJE IMPENETRABLE:</strong> Aura by May Roga LLC es una Agencia Informativa de Mercado. No ofrecemos servicios médicos ni seguros. Reportamos datos de precios para ahorro del consumidor.",
             p1: "C. Rápida", p2: "Standard", p3: "Suscripción",
             btn: "VER MI AHORRO ESTIMADO",
             zip: "ZIP Code", q: "¿Qué servicio busca ahorrar?",
@@ -110,8 +92,8 @@
             donBtn: "PAGAR DONACIÓN AHORA"
         },
         en: {
-            marquee: "🛡️ AURA PROVIDES ESTIMATED PRICES OF HEALTH SERVICES AND OTHER MARKETS. WE ARE NOT DOCTORS OR INSURERS. SAVE MONEY BY NEGOTIATING DIRECTLY WITH PROVIDERS.",
-            legal: "LEGAL SHIELD: Aura by May Roga LLC is a Market Information Agency. We do not provide medical services or insurance. We provide price intelligence and cost estimates so clients can negotiate and save money informed.",
+            marquee: "🛡️ AURA LOCATES SAVINGS • DON'T PAY HIDDEN PRICES • PRICE ADVISORY IN USA • SAVE MONEY BY NOT OVERPAYING",
+            legal: "<strong>IMPENETRABLE SHIELD:</strong> Aura by May Roga LLC is a Market Information Agency. We do not offer medical services or insurance. We report price data for consumer savings.",
             p1: "Fast Query", p2: "Standard", p3: "Subscription",
             btn: "VIEW MY ESTIMATED SAVINGS",
             zip: "ZIP Code", q: "What service do you want to save on?",
@@ -120,8 +102,8 @@
             donBtn: "PAY DONATION NOW"
         },
         ht: {
-            marquee: "🛡️ AURA BAYEN ESTIMASYON PRI POU SÈVIS SANTE AK LÒT MACHE. NOU PA DOKTÈ NI ASIRÈ. EKONOMIZE LAJAN PA NEGOSYE DIRÈK AK FOUNISÈ YO.",
-            legal: "BLENDAJ LEGAL: Aura pa May Roga LLC se yon Ajans Enfòmasyon sou mache. Nou pa ofri sèvis medikal oswa asirans. Nou bay entèlijans pri ak estimasyon pou kliyan ka negosye epi ekonomize lajan.",
+            marquee: "🛡️ AURA JWENN EKONOMI • PA PEYE PRI KACHE • KONSÈY PRI NAN USA • EKONOMIZE LAJAN LÈ OU PA PEYE TROP",
+            legal: "<strong>BLENDAJ ENPENETRAB:</strong> Aura pa May Roga LLC se yon Ajans Enfòmasyon sou mache. Nou pa ofri sèvis medikal oswa asirans. Nou rapòte done pri pou ekonomi konsomatè yo.",
             p1: "Kous Rapid", p2: "Standard", p3: "Abònman",
             btn: "WÈ ESTIMASYON EKONOMI MWEN",
             zip: "Kòd Postal", q: "Ki sèvis ou vle fè ekonomi?",
@@ -147,49 +129,25 @@
         document.getElementById("don-btn").innerText = t.donBtn;
     }
 
-    // Pago de planes
     async function pay(plan) {
-        try {
-            const fd = new FormData(); fd.append("plan", plan);
-            const res = await fetch(`${API}/create-checkout-session`, { method: "POST", body: fd });
-            const data = await res.json();
-            if(data.url) window.location.href = data.url;
-        } catch (e) {
-            alert("Error al iniciar pago: " + e);
-        }
+        const fd = new FormData(); fd.append("plan", plan);
+        const res = await fetch(`${API}/create-checkout-session`, { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
     }
 
-    // Donación directa
-    async function payDonation() {
-        try {
-            const amount = prompt("Ingrese el monto de donación en USD:", "5");
-            if(!amount) return;
-            const fd = new FormData(); fd.append("plan", "donacion"); fd.append("amount", amount);
-            const res = await fetch(`${API}/create-donation-session`, { method: "POST", body: fd });
-            const data = await res.json();
-            if(data.url) window.location.href = data.url;
-        } catch(e) {
-            alert("Error en donación: " + e);
-        }
-    }
-
-    // Estimados solo si pagó
     async function getEstimate() {
-        if(!hasAccess) return alert("Debe pagar para acceder al sistema o entrar con usuario autorizado.");
         const zip = document.getElementById("zip").value;
         const q = document.getElementById("q").value;
-        if(!zip || !q) return alert("Faltan datos.");
-        document.getElementById("res").innerHTML = "Aura localizando el precio más bajo y generando estimados...";
+        if(!zip || !q) return alert("Error: Faltan datos / Missing data");
+        document.getElementById("res").innerHTML = "Aura localizando el precio más bajo...";
         const fd = new FormData();
-        fd.append("zip_code", zip);
-        fd.append("consulta", q);
-        fd.append("plan_type", "standard");
+        fd.append("zip_code", zip); fd.append("consulta", q); fd.append("plan_type", "standard");
         const res = await fetch(`${API}/estimado`, { method: "POST", body: fd });
         const data = await res.json();
         document.getElementById("res").innerHTML = data.estimado;
     }
 
-    // Voz
     function listen() {
         const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         rec.lang = currentLang === 'es' ? 'es-US' : (currentLang === 'en' ? 'en-US' : 'fr-FR');
@@ -202,7 +160,6 @@
         msg.lang = currentLang === 'es' ? 'es-US' : (currentLang === 'en' ? 'en-US' : 'fr-FR');
         window.speechSynthesis.speak(msg);
     }
-
 </script>
 </body>
 </html>
