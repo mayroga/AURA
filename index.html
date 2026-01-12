@@ -5,39 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AURA by May Roga LLC</title>
     <style>
-        body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; overflow-x: hidden; }
-        
-        /* Marquesina Azul Vibrante Continua */
+        body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; }
         .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 15px 0; }
         .marquee-content { display: inline-block; animation: scroll 35s linear infinite; color: #00d4ff; font-weight: 900; font-size: 1.2rem; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
         .container { max-width: 900px; margin: auto; padding: 25px; border: 3px solid #00d4ff; border-radius: 40px; background: #080808; margin-top: 10px; }
         .yellow { color: #ffff00; font-weight: bold; font-size: 1.5rem; }
-        
         .search-hero { font-size: 1.5rem; color: #00d4ff; font-weight: bold; margin: 20px 0; border: 1px dashed #00d4ff; padding: 20px; border-radius: 20px; }
-
-        /* Muro de Pago */
-        #paywall { display: block; }
-        #sistema-aura { display: none; }
-
         .plan-card { border: 2px solid #00d4ff; border-radius: 20px; padding: 15px; margin: 10px; display: inline-block; width: 28%; vertical-align: top; background: #0a0a0a; }
         .btn-pay { background: #00d4ff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; }
-        
         input { padding: 18px; border-radius: 15px; border: 2px solid #00d4ff; background: #000; color: #fff; margin: 10px; font-size: 1.2rem; width: 85%; }
-        
-        .mic-btn { background: #111; border: 2px solid #00d4ff; color: #00d4ff; width: 80px; height: 80px; border-radius: 50%; font-size: 3rem; cursor: pointer; margin: 15px; }
-
-        /* Donación Independiente */
-        .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 30px; margin-top: 40px; background: #000; }
+        .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 30px; margin-top: 40px; }
         .btn-donar { background: #ffff00; color: #000; border: none; padding: 20px; border-radius: 15px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
-        
         .res-box { text-align: left; padding: 25px; border: 1px dashed #00d4ff; background: #050505; margin-top: 25px; font-size: 1.2rem; line-height: 1.6; }
-        
-        /* Funciones de Valor Agregado */
-        .export-bar { margin-top: 20px; display: none; }
-        .btn-ex { padding: 15px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
-        .wa { background: #25d366; color: white; } .em { background: #00d4ff; color: black; } .pd { background: #ff4444; color: white; }
+        .btn-ex { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
     </style>
 </head>
 <body>
@@ -62,49 +43,33 @@
         <div class="plan-card"><h4>STANDARD</h4><p>$9.99</p><button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button></div>
         <div class="plan-card"><h4>ESPECIAL</h4><p>$19.99</p><button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button></div>
 
-        <div style="margin-top:35px; border-top: 1px solid #333; padding-top: 25px;">
+        <div style="margin-top:30px;">
             <p class="yellow">ACCESO ADMINISTRADOR / DUEÑO</p>
             <input type="text" id="adm_u" placeholder="Usuario">
             <input type="password" id="adm_p" placeholder="Contraseña">
-            <button class="btn-pay" style="width:250px;" onclick="validaAdmin()">ENTRAR AL SISTEMA</button>
+            <button class="btn-pay" style="width:200px;" onclick="validaAdmin()">ENTRAR</button>
         </div>
     </div>
 
-    <div id="sistema-aura">
-        <div style="margin-bottom: 20px;">
-            <button onclick="setLang('es')" class="btn-ex em">ESPAÑOL</button>
-            <button onclick="setLang('en')" class="btn-ex em">ENGLISH</button>
-            <button onclick="setLang('ht')" class="btn-ex em">KREYÒL</button>
-        </div>
-        
-        <button onclick="listen()" class="mic-btn">🎤</button>
-        <p>Toca el micrófono para hablar con Aura</p>
-        
+    <div id="sistema-aura" style="display:none;">
+        <button onclick="listen()" style="font-size:4rem; background:none; border:none; cursor:pointer;">🎤</button>
         <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
-        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.6rem; height: 70px;">REVELAR MI AHORRO</button>
-        
+        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.6rem;">REVELAR MI AHORRO</button>
         <div id="res" class="res-box"></div>
-        
-        <button id="btn-read" style="display:none; background:#ffff00; color:#000; padding:15px; border-radius:15px; width:100%; font-weight:900; margin-top:10px;" onclick="readOut()">🔊 ESCUCHAR REPORTE DE AURA</button>
-
-        <div id="export-bar" class="export-bar">
-            <button class="btn-ex wa" onclick="shareWA()">WhatsApp 🛡️</button>
-            <button class="btn-ex em" onclick="sendMail()">Email 🛡️</button>
-            <button class="btn-ex pd" onclick="window.print()">Imprimir / PDF 🛡️</button>
+        <div id="export-bar" style="display:none; margin-top:15px;">
+            <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
+            <button class="btn-ex" style="background:#ff4444;" onclick="window.print()">PDF / Imprimir 🛡️</button>
+            <button class="btn-ex" style="background:#ffff00; color:black;" onclick="readOut()">🔊 Escuchar</button>
         </div>
     </div>
 
     <div class="donacion-box">
         <h2 style="color: #ffff00; margin-top: 0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-        <p>Tu donación voluntaria crea nuevos medios de trabajo y sostiene esta plataforma para los que no tienen nada.</p>
         <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
     </div>
 </div>
 
 <script>
-    let currentLang = 'es';
-    const LEGAL = "Este reporte es emitido por Aura by May Roga LLC, Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Reportamos datos de mercado públicos para el ahorro del consumidor.";
-
     async function validaAdmin() {
         const fd = new FormData();
         fd.append("user", document.getElementById('adm_u').value);
@@ -123,28 +88,26 @@
 
     async function getEstimate() {
         const q = document.getElementById('q').value;
-        if(!q) return;
-        document.getElementById('res').innerText = "Aura localizando el ahorro en bandeja de plata...";
+        document.getElementById('res').innerText = "Aura consultando fuentes oficiales...";
         const fd = new FormData(); fd.append("consulta", q);
         const res = await fetch("/estimado", { method: "POST", body: fd });
         const data = await res.json();
         document.getElementById('res').innerText = data.resultado;
         document.getElementById('export-bar').style.display = 'block';
-        document.getElementById('btn-read').style.display = 'block';
     }
 
     function shareWA() {
-        const t = encodeURIComponent("REPORTE AURA:\n" + document.getElementById('res').innerText + "\n\n" + LEGAL);
+        const t = encodeURIComponent("REPORTE AURA BY MAY ROGA LLC:\n" + document.getElementById('res').innerText);
         window.open("https://wa.me/?text=" + t);
     }
 
     function readOut() {
         const u = new SpeechSynthesisUtterance(document.getElementById('res').innerText);
-        u.lang = currentLang === 'es' ? 'es-US' : 'en-US';
         window.speechSynthesis.speak(u);
     }
 
     async function pagar(plan) {
+        if (plan === 'donacion') { window.location.href = "https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"; return; }
         const fd = new FormData(); fd.append("plan", plan);
         const res = await fetch("/create-checkout-session", { method: "POST", body: fd });
         const data = await res.json();
@@ -152,8 +115,7 @@
     }
 
     function listen() {
-        const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
-        const rec = new Speech();
+        const rec = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
         rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; };
         rec.start();
     }
