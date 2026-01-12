@@ -153,7 +153,7 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('90791','Evaluación Psicológica Inicial','FL','33101',190,390),
 ('D4341','Limpieza Profunda (Raspado por Cuadrante)','FL','33101',210,460),
 ('76805','Ultrasonido de Embarazo (Completo)','FL','33101',320,720);
-CREATE INDEX idx_cpt_state_zip ON cost_estimates(cpt_code, state, zip_code);
+
 -- PARTE 3: GEORGIA, HAWAII, IDAHO, ILLINOIS, INDIANA, IOWA, KANSAS, KENTUCKY
 -- COBERTURA: DENTAL, MÉDICA, PSICOLOGÍA, TERAPIA Y DIAGNÓSTICO
 
@@ -441,3 +441,4 @@ INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, h
 ('90837','Psicoterapia (60 min)','WY','82001',165,320),
 ('97140','Terapia Manual','WY','82001',90,185),
 ('85025','Hemograma Completo (CBC)','WY','82001',32,80);
+CREATE INDEX idx_cpt_state_zip ON cost_estimates(cpt_code, state, zip_code);
