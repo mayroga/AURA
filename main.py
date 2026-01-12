@@ -1,26 +1,26 @@
 import os
 import stripe
-from datetime import datetime
-from fastapi import FastAPI, Form, HTTPException
+import smtplib
+from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from email.mime.text import MIMEText
 import google.generativeai as genai
-import openai
 from dotenv import load_dotenv
 
 load_dotenv()
 app = FastAPI()
 
-# Configuración de Seguridad y Cobro
+# Configuración de Llaves y Seguridad
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# IDs de Stripe - ASEGÚRATE DE COPIAR LOS DE TU DASHBOARD DE STRIPE
+# IDs de Stripe proporcionados
 PRICE_IDS = {
-    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",  
+    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
     "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE",
-    "special": "price_1SnatfBOA5mT4t0PZouWzfpw",  
-    "donacion": "price_1SoB56BOA5mT4t0P7EXAMPLE" # Reemplaza este por tu ID de Donación real
+    "special": "price_1SnatfBOA5mT4t0PZouWzfpw",
+    "donacion": "price_1SoB56BOA5mT4t0P7EXAMPLE"
 }
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -31,47 +31,44 @@ async def read_index():
         return f.read()
 
 @app.post("/estimado")
-async def obtener_estimado(
-    zip_code: str = Form(...),
-    consulta: str = Form(...),
-    plan_type: str = Form(...),
-    is_admin: str = Form("false")
-):
-    hoy = datetime.now()
-    # Lógica de tiempos exacta
-    if is_admin == "true": tiempo = "Ilimitado"
-    elif plan_type == "rapido": tiempo = "7 min"
-    elif plan_type == "standard": tiempo = "15 min"
-    elif plan_type == "special": tiempo = "35 min" if hoy.day <= 2 else "6 min"
-    else: tiempo = "Acceso por Pago"
-
-    # El Prompt que vende tu servicio y te blinda
+async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es")):
     prompt = f"""
-    ERES EL ASESOR JEFE DE 'AURA BY MAY ROGA LLC'.
-    Misión: Inteligencia de Precios para Ahorro del Cliente.
-   
-    1. Localiza 5 estimados de precios (los más baratos encontrados en USA) para: {consulta} cerca de {zip_code}.
-    2. Compara el ahorro si el cliente viaja a otro estado o condado.
-    3. Indica cuánto dinero ganan al NO pagar el precio inflado de los hospitales.
-    4. Explica que estos datos son para negociar directamente con el proveedor.
-    5. BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, una Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Solo informamos costos de mercado."
+    ERES EL ASESOR JEFE DE AURA BY MAY ROGA LLC. 
+    OBJETIVO: TRANSPARENCIA TOTAL PARA SIN SEGURO, POCO SEGURO Y BUSCADORES DE PRESTIGIO.
+    CONSULTA: "{consulta}" | IDIOMA: "{lang}"
+
+    REGLA DE ORO: EL REPORTE DEBE COMENZAR Y TERMINAR CON ESTE BLINDAJE:
+    "ESTE REPORTE ES EMITIDO POR AURA BY MAY ROGA LLC, AGENCIA INFORMATIVA INDEPENDIENTE. NO SOMOS MÉDICOS, NI SEGUROS, NI DAMOS DIAGNÓSTICOS. REPORTAMOS DATOS PÚBLICOS DE MERCADO PARA AHORRO DEL CONSUMIDOR."
+
+    ORDEN DEL REPORTE:
+    1. GANANCIA ESTIMADA (Dinero que el cliente deja de perder hoy).
+    2. ZONA DE CONFORT: 2 opciones locales en su área.
+    3. PRESTIGIO: La mejor opción por fama y reputación del estado.
+    4. AHORRO VECINO: 3 opciones en condados cercanos.
+    5. RUTA NACIONAL: Los 6 mejores precios de los 50 estados.
+    
+    ESTILO: Peras y manzanas. Usa: DINERO, GANANCIA, CONTROL.
     """
-   
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        # timeout de 10 segundos para que no se congele
-        response = model.generate_content(prompt)
-        respuesta = response.text
-    except Exception as e:
-        # Respaldo OpenAI en caso de caída de Gemini
-        try:
-            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-            respuesta = res.choices[0].message.content
-        except:
-            respuesta = "Aura está procesando altos volúmenes de datos. Por favor, refresque y reintente."
+        res = model.generate_content(prompt)
+        return {"resultado": res.text}
+    except:
+        return {"resultado": "Error en Aura. Reintente."}
 
-    return {"estimado": f"<strong>ACCESO CONCEDIDO: {tiempo}</strong><br><br>{respuesta.replace('\n', '<br>')}"}
+@app.post("/enviar-email")
+async def enviar_email(destinatario: str = Form(...), contenido: str = Form(...)):
+    try:
+        msg = MIMEText(contenido)
+        msg['Subject'] = 'REPORTE BLINDADO DE AHORRO - AURA BY MAY ROGA LLC'
+        msg['From'] = os.getenv("SENDER_EMAIL")
+        msg['To'] = destinatario
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(os.getenv("SENDER_EMAIL"), os.getenv("EMAIL_API_KEY"))
+            server.sendmail(os.getenv("SENDER_EMAIL"), destinatario, msg.as_string())
+        return {"status": "Enviado"}
+    except:
+        return JSONResponse(content={"error": "Error al enviar"}, status_code=500)
 
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
@@ -82,7 +79,7 @@ async def pay(plan: str = Form(...)):
             line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
             mode=mode,
             success_url="https://aura-iyxa.onrender.com/?success=true",
-            cancel_url="https://aura-iyxa.onrender.com/?cancel=true"
+            cancel_url="https://aura-iyxa.onrender.com/"
         )
         return {"url": session.url}
     except Exception as e:
