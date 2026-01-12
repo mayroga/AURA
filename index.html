@@ -61,8 +61,10 @@
         <button onclick="listen()" style="font-size:5rem; background:none; border:none; cursor:pointer; filter: drop-shadow(0 0 10px #00d4ff);">🎤</button>
         <p id="status-lang" style="color:#00d4ff; font-weight:bold;">Idioma: Español</p>
         
-        <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
-        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; background:#00d4ff; color:#000; box-shadow: 0 0 20px #00d4ff;">REVELAR MI AHORRO</button>
+        <div style="position: relative; width: 85%; margin: auto;">
+    <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
+    <button onclick="document.getElementById('q').value=''" style="position: absolute; right: 20px; top: 25px; background: none; border: none; color: #00d4ff; cursor: pointer; font-weight: bold;">✖ BORRAR</button>
+</div>
         
         <div id="res" class="res-box"></div>
         
