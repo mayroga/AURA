@@ -5,63 +5,137 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AURA BY MAY ROGA LLC</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #000; color: #fff; margin: 0; text-align: center; }
-        .marquee-box { background: #001a33; border-bottom: 2px solid #00d4ff; padding: 10px 0; overflow: hidden; position: sticky; top: 0; z-index: 100; }
-        .marquee-text { display: inline-block; white-space: nowrap; animation: scroll 30s linear infinite; color: #00d4ff; font-weight: 900; font-size: 1.2rem; }
-        @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-        .container { max-width: 850px; margin: 20px auto; padding: 20px; border: 3px solid #00d4ff; border-radius: 35px; background: #080808; }
-        .brand-aura { color: #00d4ff; font-size: 3.5rem; font-weight: 900; margin: 0; }
-        .yellow { color: #ffff00; font-weight: bold; font-size: 1.5rem; }
-        input { width: 85%; padding: 20px; border-radius: 15px; border: 2px solid #00d4ff; background: #000; color: #fff; font-size: 1.2rem; margin: 15px 0; }
-        .btn-go { background: #00d4ff; color: #000; border: none; padding: 20px; border-radius: 15px; font-weight: 900; font-size: 1.5rem; cursor: pointer; width: 90%; }
-        .share-btn { padding: 12px; margin: 5px; border-radius: 10px; cursor: pointer; font-weight: bold; border: none; }
-        .wa { background: #25d366; color: #fff; } .ml { background: #00d4ff; color: #000; } .pd { background: #ff4444; color: #fff; }
-        .donacion-box { border: 4px solid #ffff00; background: #000; border-radius: 35px; padding: 30px; margin-top: 40px; }
-        @media print { .marquee-box, button, input { display: none; } body { background: white; color: black; } 
-            #res::before { content: "REPORTE OFICIAL AURA BY MAY ROGA LLC - AGENCIA INFORMATIVA INDEPENDIENTE. NO SOMOS MÉDICOS."; display: block; font-weight: bold; border-bottom: 2px solid #000; margin-bottom: 10px; } }
+        body { font-family: 'Arial', sans-serif; background: #000; color: #fff; margin: 0; text-align: center; }
+        
+        /* AUTOPROPAGANDA COMPLETA SIN ESPACIOS VACÍOS */
+        .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 12px 0; }
+        .marquee-content { display: inline-block; animation: scroll 35s linear infinite; color: #00d4ff; font-weight: 900; font-size: 1.2rem; }
+        @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        .container { max-width: 900px; margin: auto; padding: 25px; border: 3px solid #00d4ff; border-radius: 40px; background: #080808; margin-top: 10px; }
+        
+        /* MURO DE PAGO Y LOGIN */
+        #paywall { display: block; }
+        #sistema-aura { display: none; }
+
+        .plan-card { border: 2px solid #00d4ff; border-radius: 20px; padding: 15px; margin: 10px; display: inline-block; width: 28%; vertical-align: top; background: #0a0a0a; }
+        .btn-pay { background: #00d4ff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        
+        .admin-login { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        input { padding: 15px; border-radius: 12px; border: 2px solid #00d4ff; background: #000; color: #fff; margin: 5px; font-size: 1rem; }
+        
+        /* BOTÓN DONACIÓN INDEPENDIENTE */
+        .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 25px; margin-top: 30px; }
+        .btn-donar { background: #ffff00; color: #000; border: none; padding: 25px; border-radius: 20px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
+        
+        .lang-btn { background: #222; color: #00d4ff; border: 1px solid #00d4ff; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin: 5px; font-weight: bold; }
+        .res-box { text-align: left; padding: 20px; border: 1px dashed #00d4ff; background: #050505; margin-top: 20px; font-size: 1.2rem; line-height: 1.5; }
     </style>
 </head>
 <body>
-<div class="marquee-box">
-    <div class="marquee-text">🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • EXCELENCIA MÉDICA Y PRESTIGIO • NO MÁS PRECIOS OCULTOS 🛡️</div>
+
+<div class="marquee">
+    <div class="marquee-content">
+        🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • SI BUSCAS LA EXCELENCIA MÉDICA Y EL PRESTIGIO, TE DAMOS LO MEJOR DE USA • NO MÁS PRECIOS OCULTOS • TRANSPARENCIA TOTAL PARA TODOS • 🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • SI BUSCAS LA EXCELENCIA MÉDICA Y EL PRESTIGIO, TE DAMOS LO MEJOR DE USA • NO MÁS PRECIOS OCULTOS • TRANSPARENCIA TOTAL PARA TODOS •
+    </div>
 </div>
+
 <div class="container">
-    <h1 class="brand-aura">AURA</h1>
-    <div class="yellow">by May Roga LLC</div>
-    <div style="margin: 20px 0;"><button onclick="listen()" style="background:none; border:none; font-size:4rem; cursor:pointer;">🎤</button></div>
-    <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
-    <button class="btn-go" onclick="getEstimate()">VER MI AHORRO ESTIMADO</button>
-    <div id="res" style="margin-top:25px; text-align:left; border-top:1px dashed #00d4ff; padding:15px; background:#050505;"></div>
-    <div id="export" style="display:none; margin-top:20px;">
-        <button class="share-btn wa" onclick="shareWA()">WhatsApp 🛡️</button>
-        <button class="share-btn ml" onclick="sendMail()">Email 🛡️</button>
-        <button class="share-btn pd" onclick="window.print()">Imprimir / PDF 🛡️</button>
+    <h1 style="color: #00d4ff; font-size: 3.5rem; margin: 0;">AURA</h1>
+    <div style="color: #ffff00; font-weight: bold; font-size: 1.5rem;">by May Roga LLC</div>
+
+    <div id="paywall">
+        <h2 style="color: #00d4ff;">ELIJA SU PLAN PARA ACCEDER AL ASESOR</h2>
+        <div class="plan-card">
+            <h4>CONSULTA RÁPIDA</h4>
+            <p style="font-size: 1.5rem;">$5.99</p>
+            <button class="btn-pay" onclick="pagar('rapido')">PAGAR ACCESO</button>
+        </div>
+        <div class="plan-card">
+            <h4>STANDARD</h4>
+            <p style="font-size: 1.5rem;">$9.99</p>
+            <button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button>
+        </div>
+        <div class="plan-card">
+            <h4>ESPECIAL</h4>
+            <p style="font-size: 1.5rem;">$19.99</p>
+            <button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button>
+        </div>
+
+        <div class="admin-login">
+            <p style="color: #ffff00;">ACCESO ADMINISTRADOR / DUEÑO</p>
+            <input type="text" id="user" placeholder="Username">
+            <input type="password" id="pass" placeholder="Password">
+            <button class="btn-pay" style="width:auto; padding: 15px 40px;" onclick="checkAdmin()">ENTRAR AL SISTEMA</button>
+        </div>
     </div>
+
+    <div id="sistema-aura">
+        <div style="margin-bottom: 20px;">
+            <button class="lang-btn" onclick="setLang('es')">ESPAÑOL</button>
+            <button class="lang-btn" onclick="setLang('en')">ENGLISH</button>
+            <button class="lang-btn" onclick="setLang('ht')">KREYÒL</button>
+        </div>
+        
+        <p style="color: #00d4ff;">Hable con su Asesor de Aura sobre el servicio médico que desea ahorrar:</p>
+        <div style="margin: 20px 0;"><button onclick="listen()" style="background:none; border:none; font-size:4rem; cursor:pointer;">🎤</button></div>
+        
+        <input type="text" id="q" style="width: 85%;" placeholder="Ej: 'Extracción de muela en Miami'">
+        <button class="btn-pay" style="font-size: 1.6rem; background: #00d4ff; color: #000;" onclick="getEstimate()">OBTENER REPORTE DE AHORRO</button>
+        
+        <div id="res" class="res-box"></div>
+    </div>
+
     <div class="donacion-box">
-        <h2 style="color: #ffff00;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-        <p>Esta sección es INDEPENDIENTE. Su donación voluntaria se destina al mantenimiento, al sustento de trabajadores y a que el dueño cree nuevos medios de trabajo para ayudar a la comunidad.</p>
-        <button onclick="donar()" style="background:#ffff00; color:#000; border:none; padding:20px; border-radius:15px; font-weight:900; width:100%; cursor:pointer; font-size:1.5rem;">REALIZAR DONACIÓN VOLUNTARIA</button>
+        <h2 style="color: #ffff00; margin-top: 0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
+        <p>Donación independiente para mantenimiento y creación de nuevos medios de trabajo. Ayudar a crear trabajo es ayudar a los demás.</p>
+        <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
     </div>
 </div>
+
 <script>
-    const LEGAL = "🛡️ REPORTE BLINDADO AURA BY MAY ROGA LLC: Agencia Informativa Independiente. No somos médicos ni seguros. 🛡️\n\n";
-    function listen() { const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = 'es-US'; rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; }; rec.start(); }
+    let currentLang = 'es';
+    function setLang(l) { currentLang = l; }
+
+    function checkAdmin() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        // Credenciales exactas proporcionadas
+        if(u === "MAYROGA" && p === "AURA_MAYROGA_2026") {
+            document.getElementById('paywall').style.display = 'none';
+            document.getElementById('sistema-aura').style.display = 'block';
+        } else { alert("Credenciales Incorrectas"); }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+        document.getElementById('paywall').style.display = 'none';
+        document.getElementById('sistema-aura').style.display = 'block';
+    }
+
+    function listen() {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = currentLang === 'es' ? 'es-US' : (currentLang === 'en' ? 'en-US' : 'fr-FR');
+        rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; };
+        rec.start();
+    }
+
     async function getEstimate() {
-        const q = document.getElementById('q').value; if(!q) return;
-        document.getElementById('res').innerText = "Aura localizando tu ganancia...";
-        const fd = new FormData(); fd.append("consulta", q);
+        const q = document.getElementById('q').value;
+        if(!q) return;
+        document.getElementById('res').innerHTML = "El Asesor de Aura está localizando el máximo ahorro...";
+        const fd = new FormData(); fd.append("consulta", q); fd.append("lang", currentLang);
         const res = await fetch("/estimado", { method: "POST", body: fd });
         const data = await res.json();
         document.getElementById('res').innerHTML = data.resultado.replace(/\n/g, '<br>');
-        document.getElementById('export').style.display = 'block';
     }
-    function shareWA() { const t = encodeURIComponent(LEGAL + document.getElementById('res').innerText); window.open(`https://wa.me/?text=${t}`); }
-    async function sendMail() {
-        const em = prompt("Tu Email:"); if(!em) return;
-        const fd = new FormData(); fd.append("destinatario", em); fd.append("contenido", LEGAL + document.getElementById('res').innerText);
-        await fetch("/enviar-email", { method: "POST", body: fd }); alert("Enviado con blindaje legal.");
+
+    async function pagar(plan) {
+        const fd = new FormData(); fd.append("plan", plan);
+        const res = await fetch("/create-checkout-session", { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.url) window.location.href = data.url;
     }
-    async function donar() { const fd = new FormData(); fd.append("plan", "donacion"); const res = await fetch("/create-checkout-session", { method: "POST", body: fd }); const data = await res.json(); if(data.url) window.location.href = data.url; }
 </script>
 </body>
 </html>
