@@ -1,7 +1,7 @@
 import os
 import stripe
 from datetime import datetime
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
@@ -9,21 +9,16 @@ import openai
 from dotenv import load_dotenv
 
 load_dotenv()
-
 app = FastAPI()
 
-# ================================
-# CONFIGURACIONES
-# ================================
-
+# Configuración Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-DOMAIN = "https://aura-iyxa.onrender.com"
-
+# Price IDs para planes normales
 PRICE_IDS = {
-    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",   
-    "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE", 
+    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
+    "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE",
     "special": "price_1SnatfBOA5mT4t0PZouWzfpw"
 }
 
@@ -31,22 +26,16 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
-# ================================
-# FRONTEND
-# ================================
-
+# Servir index.html
 @app.get("/", response_class=HTMLResponse)
-async def serve_index():
+async def read_index():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
-# ================================
-# ESTIMADOS
-# ================================
-
+# Estimado de precios
 @app.post("/estimado")
 async def obtener_estimado(
     zip_code: str = Form(...),
@@ -55,114 +44,83 @@ async def obtener_estimado(
     is_admin: str = Form("false")
 ):
     hoy = datetime.now()
-
     if is_admin == "true":
         tiempo = "Ilimitado"
     elif plan_type == "rapido":
-        tiempo = "7 minutos"
+        tiempo = "7 min"
     elif plan_type == "standard":
-        tiempo = "15 minutos"
+        tiempo = "15 min"
     elif plan_type == "special":
-        tiempo = "35 minutos" if hoy.day <= 2 else "6 minutos"
+        tiempo = "35 min"
     else:
-        tiempo = "Acceso limitado"
+        tiempo = "Acceso por Pago"
 
     prompt = f"""
-    ERES EL ASESOR JEFE DE 'AURA BY MAY ROGA LLC'.
+ERES EL ASESOR JEFE DE 'AURA BY MAY ROGA LLC'.
+Misión: Inteligencia de Precios para Ahorro del Cliente.
 
-    MISIÓN: Inteligencia de precios para ayudar al cliente a ahorrar dinero en USA.
-
-    Tarea:
-    1. Encuentra los 5 precios más bajos disponibles en Estados Unidos para:
-       {consulta} cerca de {zip_code}.
-    2. Muestra diferencias de precio por estado o condado.
-    3. Indica cuánto dinero se ahorra el paciente al NO pagar precios inflados.
-    4. Explica que estos precios sirven para negociar directamente con clínicas y proveedores.
-    5. Incluye este blindaje legal:
-
-    "Este reporte es emitido por Aura by May Roga LLC, una Agencia Informativa Independiente.
-    No somos médicos, hospitales ni compañías de seguros. No damos diagnósticos ni tratamientos.
-    Solo informamos precios de mercado para ahorro del consumidor."
-    """
+1. Encuentra la opción más barata para {consulta} en el ZIP code {zip_code} (muestra nombre de clínica/hospital, ZIP, precio).
+2. Encuentra 3 opciones más baratas dentro del mismo condado, mostrando nombre de clínica/hospital, ZIP, precio. Estas mismas opciones se consideran dentro del mismo estado.
+3. Encuentra 6 opciones más baratas fuera del estado si existen, mostrando nombre de clínica/hospital, ZIP, condado, estado, precio.
+4. Indica cuánto dinero ahorra el cliente al elegir la opción más barata.
+5. Presenta todo en HTML limpio, usando <b> y <br> para claridad.
+6. BLINDAJE LEGAL: "Este reporte es emitido por Aura by May Roga LLC, Agencia Informativa Independiente. No somos médicos ni seguros. Solo informamos costos de mercado."
+"""
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
-        resultado = response.text
-    except:
+        respuesta = response.text
+    except Exception:
         try:
             client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             res = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": prompt}]
             )
-            resultado = res.choices[0].message.content
+            respuesta = res.choices[0].message.content
         except:
-            resultado = "Aura está procesando altos volúmenes. Intente nuevamente."
+            respuesta = "Aura está procesando altos volúmenes de datos. Por favor, refresque y reintente."
 
-    return {
-        "estimado": f"<strong>ACCESO CONCEDIDO: {tiempo}</strong><br><br>{resultado.replace('\n','<br>')}"
-    }
+    return {"estimado": f"<strong>ACCESO CONCEDIDO: {tiempo}</strong><br><br>{respuesta.replace(chr(10), '<br>')}"}
 
-# ================================
-# PAGOS POR PLAN (PRICE_ID)
-# ================================
-
+# Checkout para planes normales
 @app.post("/create-checkout-session")
-async def create_checkout(plan: str = Form(...)):
+async def create_checkout_session(plan: str = Form(...)):
     try:
-        plan = plan.lower()
-        if plan not in PRICE_IDS:
-            return JSONResponse({"error": "Plan inválido"}, status_code=400)
-
-        mode = "subscription" if plan == "special" else "payment"
-
+        mode = "subscription" if plan.lower() == "special" else "payment"
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price": PRICE_IDS[plan],
-                "quantity": 1
-            }],
+            line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
             mode=mode,
-            success_url=f"{DOMAIN}/?success=true",
-            cancel_url=f"{DOMAIN}/?cancel=true"
+            success_url="https://aura-iyxa.onrender.com/?success=true",
+            cancel_url="https://aura-iyxa.onrender.com/?cancel=true"
         )
-
         return {"url": session.url}
-
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# ================================
-# DONACIÓN REAL (SIN PRICE ID)
-# ================================
-
+# Donación directa (sin Price ID)
 @app.post("/donate")
-async def donate(amount: int = Form(1000)):
+async def donate(amount: int = Form(...)):
     """
-    amount en CENTAVOS. 
-    Ejemplo: 1000 = $10.00
+    amount en centavos. Ejemplo: $10 → 1000
     """
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            mode="payment",
             line_items=[{
                 "price_data": {
                     "currency": "usd",
-                    "product_data": {
-                        "name": "Donación - Aura by May Roga LLC",
-                        "description": "Apoyo para mantener la plataforma y crear empleos"
-                    },
+                    "product_data": {"name": "Donación AURA"},
                     "unit_amount": amount
                 },
                 "quantity": 1
             }],
-            success_url=f"{DOMAIN}/?donation=success",
-            cancel_url=f"{DOMAIN}/?donation=cancel"
+            mode="payment",
+            success_url="https://aura-iyxa.onrender.com/?success=true",
+            cancel_url="https://aura-iyxa.onrender.com/?cancel=true"
         )
-
         return {"url": session.url}
-
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
