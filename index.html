@@ -3,131 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA BY MAY ROGA LLC</title>
+    <title>AURA by May Roga LLC</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #000; color: #fff; margin: 0; text-align: center; }
+        body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; overflow-x: hidden; }
         
-        /* AUTOPROPAGANDA COMPLETA SIN ESPACIOS VACÍOS */
-        .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 12px 0; }
+        /* Marquesina Azul Vibrante Continua */
+        .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 15px 0; }
         .marquee-content { display: inline-block; animation: scroll 35s linear infinite; color: #00d4ff; font-weight: 900; font-size: 1.2rem; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
         .container { max-width: 900px; margin: auto; padding: 25px; border: 3px solid #00d4ff; border-radius: 40px; background: #080808; margin-top: 10px; }
+        .yellow { color: #ffff00; font-weight: bold; font-size: 1.5rem; }
         
-        /* MURO DE PAGO Y LOGIN */
+        .search-hero { font-size: 1.5rem; color: #00d4ff; font-weight: bold; margin: 20px 0; border: 1px dashed #00d4ff; padding: 20px; border-radius: 20px; }
+
+        /* Muro de Pago */
         #paywall { display: block; }
         #sistema-aura { display: none; }
 
         .plan-card { border: 2px solid #00d4ff; border-radius: 20px; padding: 15px; margin: 10px; display: inline-block; width: 28%; vertical-align: top; background: #0a0a0a; }
-        .btn-pay { background: #00d4ff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        .btn-pay { background: #00d4ff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; }
         
-        .admin-login { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
-        input { padding: 15px; border-radius: 12px; border: 2px solid #00d4ff; background: #000; color: #fff; margin: 5px; font-size: 1rem; }
+        input { padding: 18px; border-radius: 15px; border: 2px solid #00d4ff; background: #000; color: #fff; margin: 10px; font-size: 1.2rem; width: 85%; }
         
-        /* BOTÓN DONACIÓN INDEPENDIENTE */
-        .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 25px; margin-top: 30px; }
-        .btn-donar { background: #ffff00; color: #000; border: none; padding: 25px; border-radius: 20px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
+        .mic-btn { background: #111; border: 2px solid #00d4ff; color: #00d4ff; width: 80px; height: 80px; border-radius: 50%; font-size: 3rem; cursor: pointer; margin: 15px; }
+
+        /* Donación Independiente */
+        .donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 30px; margin-top: 40px; background: #000; }
+        .btn-donar { background: #ffff00; color: #000; border: none; padding: 20px; border-radius: 15px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
         
-        .lang-btn { background: #222; color: #00d4ff; border: 1px solid #00d4ff; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin: 5px; font-weight: bold; }
-        .res-box { text-align: left; padding: 20px; border: 1px dashed #00d4ff; background: #050505; margin-top: 20px; font-size: 1.2rem; line-height: 1.5; }
+        .res-box { text-align: left; padding: 25px; border: 1px dashed #00d4ff; background: #050505; margin-top: 25px; font-size: 1.2rem; line-height: 1.6; }
+        
+        /* Funciones de Valor Agregado */
+        .export-bar { margin-top: 20px; display: none; }
+        .btn-ex { padding: 15px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
+        .wa { background: #25d366; color: white; } .em { background: #00d4ff; color: black; } .pd { background: #ff4444; color: white; }
     </style>
 </head>
 <body>
 
 <div class="marquee">
     <div class="marquee-content">
-        🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • SI BUSCAS LA EXCELENCIA MÉDICA Y EL PRESTIGIO, TE DAMOS LO MEJOR DE USA • NO MÁS PRECIOS OCULTOS • TRANSPARENCIA TOTAL PARA TODOS • 🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • SI BUSCAS LA EXCELENCIA MÉDICA Y EL PRESTIGIO, TE DAMOS LO MEJOR DE USA • NO MÁS PRECIOS OCULTOS • TRANSPARENCIA TOTAL PARA TODOS •
+        🛡️ AURA BY MAY ROGA LLC: PROTEGEMOS TU BOLSILLO • SI NO TIENES SEGURO, ESTÁS EN EL LUGAR CORRECTO • SI TIENES SEGURO PERO TE CUBRE POCO, AQUÍ GANAS DINERO • SI BUSCAS LA EXCELENCIA MÉDICA Y EL PRESTIGIO, TE DAMOS LO MEJOR DE USA • NO MÁS PRECIOS OCULTOS • TRANSPARENCIA TOTAL PARA TODOS • 
     </div>
 </div>
 
 <div class="container">
-    <h1 style="color: #00d4ff; font-size: 3.5rem; margin: 0;">AURA</h1>
-    <div style="color: #ffff00; font-weight: bold; font-size: 1.5rem;">by May Roga LLC</div>
+    <h1 style="color: #00d4ff; font-size: 4rem; margin: 0;">AURA</h1>
+    <div class="yellow">by May Roga LLC</div>
+
+    <div class="search-hero">
+        ESTIMADO DE PRECIOS DE SERVICIOS DE SALUD EN TODA USA, PARA TI.<br>
+        BUSCA, ENTÉRATE O PREGUNTA AQUÍ.
+    </div>
 
     <div id="paywall">
-        <h2 style="color: #00d4ff;">ELIJA SU PLAN PARA ACCEDER AL ASESOR</h2>
-        <div class="plan-card">
-            <h4>CONSULTA RÁPIDA</h4>
-            <p style="font-size: 1.5rem;">$5.99</p>
-            <button class="btn-pay" onclick="pagar('rapido')">PAGAR ACCESO</button>
-        </div>
-        <div class="plan-card">
-            <h4>STANDARD</h4>
-            <p style="font-size: 1.5rem;">$9.99</p>
-            <button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button>
-        </div>
-        <div class="plan-card">
-            <h4>ESPECIAL</h4>
-            <p style="font-size: 1.5rem;">$19.99</p>
-            <button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button>
-        </div>
+        <div class="plan-card"><h4>C. RÁPIDA</h4><p>$5.99</p><button class="btn-pay" onclick="pagar('rapido')">PAGAR ACCESO</button></div>
+        <div class="plan-card"><h4>STANDARD</h4><p>$9.99</p><button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button></div>
+        <div class="plan-card"><h4>ESPECIAL</h4><p>$19.99</p><button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button></div>
 
-        <div class="admin-login">
-            <p style="color: #ffff00;">ACCESO ADMINISTRADOR / DUEÑO</p>
-            <input type="text" id="user" placeholder="Username">
-            <input type="password" id="pass" placeholder="Password">
-            <button class="btn-pay" style="width:auto; padding: 15px 40px;" onclick="checkAdmin()">ENTRAR AL SISTEMA</button>
+        <div style="margin-top:35px; border-top: 1px solid #333; padding-top: 25px;">
+            <p class="yellow">ACCESO ADMINISTRADOR / DUEÑO</p>
+            <input type="text" id="adm_u" placeholder="Usuario">
+            <input type="password" id="adm_p" placeholder="Contraseña">
+            <button class="btn-pay" style="width:250px;" onclick="validaAdmin()">ENTRAR AL SISTEMA</button>
         </div>
     </div>
 
     <div id="sistema-aura">
         <div style="margin-bottom: 20px;">
-            <button class="lang-btn" onclick="setLang('es')">ESPAÑOL</button>
-            <button class="lang-btn" onclick="setLang('en')">ENGLISH</button>
-            <button class="lang-btn" onclick="setLang('ht')">KREYÒL</button>
+            <button onclick="setLang('es')" class="btn-ex em">ESPAÑOL</button>
+            <button onclick="setLang('en')" class="btn-ex em">ENGLISH</button>
+            <button onclick="setLang('ht')" class="btn-ex em">KREYÒL</button>
         </div>
         
-        <p style="color: #00d4ff;">Hable con su Asesor de Aura sobre el servicio médico que desea ahorrar:</p>
-        <div style="margin: 20px 0;"><button onclick="listen()" style="background:none; border:none; font-size:4rem; cursor:pointer;">🎤</button></div>
+        <button onclick="listen()" class="mic-btn">🎤</button>
+        <p>Toca el micrófono para hablar con Aura</p>
         
-        <input type="text" id="q" style="width: 85%;" placeholder="Ej: 'Extracción de muela en Miami'">
-        <button class="btn-pay" style="font-size: 1.6rem; background: #00d4ff; color: #000;" onclick="getEstimate()">OBTENER REPORTE DE AHORRO</button>
+        <input type="text" id="q" placeholder="¿Qué necesitas ahorrar?">
+        <button class="btn-pay" onclick="getEstimate()" style="font-size:1.6rem; height: 70px;">REVELAR MI AHORRO</button>
         
         <div id="res" class="res-box"></div>
+        
+        <button id="btn-read" style="display:none; background:#ffff00; color:#000; padding:15px; border-radius:15px; width:100%; font-weight:900; margin-top:10px;" onclick="readOut()">🔊 ESCUCHAR REPORTE DE AURA</button>
+
+        <div id="export-bar" class="export-bar">
+            <button class="btn-ex wa" onclick="shareWA()">WhatsApp 🛡️</button>
+            <button class="btn-ex em" onclick="sendMail()">Email 🛡️</button>
+            <button class="btn-ex pd" onclick="window.print()">Imprimir / PDF 🛡️</button>
+        </div>
     </div>
 
     <div class="donacion-box">
         <h2 style="color: #ffff00; margin-top: 0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-        <p>Donación independiente para mantenimiento y creación de nuevos medios de trabajo. Ayudar a crear trabajo es ayudar a los demás.</p>
+        <p>Tu donación voluntaria crea nuevos medios de trabajo y sostiene esta plataforma para los que no tienen nada.</p>
         <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
     </div>
 </div>
 
 <script>
     let currentLang = 'es';
-    function setLang(l) { currentLang = l; }
+    const LEGAL = "Este reporte es emitido por Aura by May Roga LLC, Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Reportamos datos de mercado públicos para el ahorro del consumidor.";
 
-    function checkAdmin() {
-        const u = document.getElementById('user').value;
-        const p = document.getElementById('pass').value;
-        // Credenciales exactas proporcionadas
-        if(u === "MAYROGA" && p === "AURA_MAYROGA_2026") {
+    async function validaAdmin() {
+        const fd = new FormData();
+        fd.append("user", document.getElementById('adm_u').value);
+        fd.append("pw", document.getElementById('adm_p').value);
+        const res = await fetch("/login-admin", { method: "POST", body: fd });
+        if(res.ok) {
             document.getElementById('paywall').style.display = 'none';
             document.getElementById('sistema-aura').style.display = 'block';
-        } else { alert("Credenciales Incorrectas"); }
+        } else { alert("Acceso Denegado."); }
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('success')) {
+    if(new URLSearchParams(window.location.search).has('success')) {
         document.getElementById('paywall').style.display = 'none';
         document.getElementById('sistema-aura').style.display = 'block';
-    }
-
-    function listen() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang = currentLang === 'es' ? 'es-US' : (currentLang === 'en' ? 'en-US' : 'fr-FR');
-        rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; };
-        rec.start();
     }
 
     async function getEstimate() {
         const q = document.getElementById('q').value;
         if(!q) return;
-        document.getElementById('res').innerHTML = "El Asesor de Aura está localizando el máximo ahorro...";
-        const fd = new FormData(); fd.append("consulta", q); fd.append("lang", currentLang);
+        document.getElementById('res').innerText = "Aura localizando el ahorro en bandeja de plata...";
+        const fd = new FormData(); fd.append("consulta", q);
         const res = await fetch("/estimado", { method: "POST", body: fd });
         const data = await res.json();
-        document.getElementById('res').innerHTML = data.resultado.replace(/\n/g, '<br>');
+        document.getElementById('res').innerText = data.resultado;
+        document.getElementById('export-bar').style.display = 'block';
+        document.getElementById('btn-read').style.display = 'block';
+    }
+
+    function shareWA() {
+        const t = encodeURIComponent("REPORTE AURA:\n" + document.getElementById('res').innerText + "\n\n" + LEGAL);
+        window.open("https://wa.me/?text=" + t);
+    }
+
+    function readOut() {
+        const u = new SpeechSynthesisUtterance(document.getElementById('res').innerText);
+        u.lang = currentLang === 'es' ? 'es-US' : 'en-US';
+        window.speechSynthesis.speak(u);
     }
 
     async function pagar(plan) {
@@ -135,6 +149,13 @@
         const res = await fetch("/create-checkout-session", { method: "POST", body: fd });
         const data = await res.json();
         if(data.url) window.location.href = data.url;
+    }
+
+    function listen() {
+        const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const rec = new Speech();
+        rec.onresult = (e) => { document.getElementById('q').value = e.results[0][0].transcript; };
+        rec.start();
     }
 </script>
 </body>
