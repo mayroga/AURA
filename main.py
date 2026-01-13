@@ -1,7 +1,6 @@
 import os
 import sqlite3
 import stripe
-import asyncio
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +12,6 @@ app = FastAPI()
 
 # 1. Configuración de API Keys
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-# Usamos el cliente nuevo que pide tu requirements
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 PRICE_IDS = {
@@ -34,12 +32,21 @@ def query_sql(termino):
             return "SQL_OFFLINE"
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        query = "SELECT cpt_code, description, state, low_price, high_price FROM cost_estimates WHERE description LIKE ? OR cpt_code LIKE ?"
-        cursor.execute(query, (f"%{termino}%", f"%{termino}%"))
+        # Búsqueda por descripción, CPT, ZIP o Estado
+        query = """
+        SELECT cpt_code, description, state, zip_code, low_price, high_price
+        FROM cost_estimates
+        WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
+        ORDER BY low_price ASC
+        LIMIT 5
+        """
+        busqueda = f"%{termino.strip().upper()}%"
+        cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
         results = cursor.fetchall()
         conn.close()
         return results if results else "DATO_NO_SQL"
     except Exception as e:
+        print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
 
 @app.get("/", response_class=HTMLResponse)
@@ -49,33 +56,44 @@ async def read_index():
         return f.read()
 
 @app.post("/estimado")
-async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es")):
-    datos_internos = query_sql(consulta)
+async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es"), zip_user: str = Form(None)):
+    # Priorizamos ZIP si la consulta es corta
+    termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
+    datos_internos = query_sql(termino_final)
+    
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
     
-    blindaje = "Este reporte es emitido por Aura by May Roga LLC, Agencia Informativa Independiente. No somos médicos, ni seguros, ni damos diagnósticos. Reportamos datos de mercado públicos para el ahorro del consumidor."
-
     prompt = f"""
-    ERES EL ASESOR JEFE DE AURA BY MAY ROGA LLC. 
-    RESPONDE ÚNICAMENTE EN IDIOMA: {idioma_destino}.
-    DATOS REALES EN NUESTRO SQL: {datos_internos}
-    
-    INSTRUCCIÓN: 
-    - Usa los datos del SQL como prioridad absoluta. 
-    - Si los datos son 'SQL_OFFLINE' o 'DATO_NO_SQL', busca en CMS.gov 2026.
-    - Estructura: Blindaje, El Tesoro, Tu Ganancia Real, Triángulo de Decisión, Derecho Legal, Fuente y Cierre.
-    """
+ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
+IDIOMA: {idioma_destino}
+DATOS SQL ENCONTRADOS: {datos_internos}
+CONSULTA ORIGINAL: {consulta}
+ZIP DETECTADO: {zip_user}
+
+REGLAS:
+1) Usa los datos SQL si existen.
+2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
+3) SALIDA ESTRUCTURADA:
+   - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
+   - REPORTE:
+       * Procedimiento/Síntoma:
+       * CPT o ICD (si aplica):
+       * Ubicación sugerida:
+       * Rango de mercado:
+       * Precio justo (Ahorro):
+4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
+"""
 
     try:
-        # Llamada con la nueva librería google-genai
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt
         )
         return {"resultado": response.text}
     except Exception as e:
-        return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo en unos segundos."}
+        print(f"[ERROR GEMINI] {e}")
+        return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo."}
 
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
