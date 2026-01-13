@@ -1,7 +1,5 @@
-import os
-import sqlite3
-import stripe
-from fastapi import FastAPI, Form
+import os, sqlite3, stripe, json, requests
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
@@ -11,8 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 app = FastAPI()
 
-# --- Configuración de Stripe ---
+# ================== CONFIG ==================
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
 PRICE_IDS = {
     "rapido": os.getenv("PRICE_RAPIDO"),
     "standard": os.getenv("PRICE_STANDARD"),
@@ -20,136 +19,141 @@ PRICE_IDS = {
 }
 LINK_DONACION = os.getenv("LINK_DONACION")
 
-# --- Configuración de Gemini ---
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+ADMIN_USER = os.getenv("ADMIN_USERNAME")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD")
 
-# --- Configuración OpenAI fallback ---
+gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# --- Middleware CORS ---
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# --- Función SQL para búsqueda ---
-def query_sql(term):
-    try:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aura_data.db')
-        if not os.path.exists(db_path):
-            return "SQL_OFFLINE"
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        term_search = f"%{term.strip().upper()}%"
-        query = """
-        SELECT cpt_code, icd_code, state, zip_code, low_price, high_price
-        FROM cost_estimates
-        WHERE description LIKE ? OR cpt_code LIKE ? OR icd_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
-        ORDER BY low_price ASC
-        LIMIT 5
-        """
-        cursor.execute(query, (term_search, term_search, term_search, term_search, term_search))
-        results = cursor.fetchall()
-        conn.close()
-        return results if results else "DATO_NO_SQL"
-    except Exception as e:
-        print(f"[ERROR SQL] {e}")
-        return f"ERROR_SQL: {str(e)}"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "aura_data.db")
 
-# --- Index ---
+# ================== GEO IP ==================
+def ip_to_zip(ip):
+    try:
+        r = requests.get(f"https://ipapi.co/{ip}/json/").json()
+        return r.get("postal"), r.get("region"), r.get("country_name")
+    except:
+        return None, None, None
+
+# ================== SQL ==================
+def query_prices(term, zip_code=None):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    term = f"%{term.upper()}%"
+
+    if zip_code:
+        cur.execute("""
+        SELECT description, cpt_code, icd_code, county, state, zip_code, low_price, high_price
+        FROM cost_estimates
+        WHERE zip_code = ?
+        AND (description LIKE ? OR cpt_code LIKE ? OR icd_code LIKE ?)
+        ORDER BY low_price ASC LIMIT 5
+        """,(zip_code,term,term,term))
+        rows = cur.fetchall()
+        if rows:
+            conn.close()
+            return rows
+
+    cur.execute("""
+    SELECT description, cpt_code, icd_code, county, state, zip_code, low_price, high_price
+    FROM cost_estimates
+    WHERE description LIKE ? OR cpt_code LIKE ? OR icd_code LIKE ?
+    ORDER BY low_price ASC LIMIT 10
+    """,(term,term,term))
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+# ================== INDEX ==================
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    with open(os.path.join(os.path.dirname(__file__), "index.html"), "r", encoding="utf-8") as f:
+    with open(os.path.join(BASE_DIR,"index.html"),"r",encoding="utf-8") as f:
         return f.read()
 
-# --- Estimado de precios ---
+# ================== ESTIMADOR ==================
 @app.post("/estimado")
-async def obtener_estimado(
-    consulta: str = Form(...),
-    lang: str = Form("es"),
-    zip_user: str = Form(None)
-):
-    # Determinar término a buscar
-    termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
-    sql_results = query_sql(termino_final)
+async def estimado(request: Request, consulta: str = Form(...), lang: str = Form("es"), zip_user: str = Form(None)):
+    ip = request.client.host
+    ip_zip, ip_state, _ = ip_to_zip(ip)
 
-    # Prompt blindado legalmente para Gemini / OpenAI
-    idioma_destino = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}.get(lang, "Español")
+    zip_final = zip_user or ip_zip or "USA"
+
+    sql = query_prices(consulta, zip_final)
+
+    idioma = {"es":"Spanish","en":"English","ht":"Haitian Creole"}.get(lang,"Spanish")
+
+    legal = {
+        "es":"Los precios pueden variar por proveedor, ubicación y complejidad. Estos son rangos estimados de mercado. Aura no ofrece servicios médicos ni de seguros.",
+        "en":"Prices may vary by provider, location and complexity. These are estimated market ranges. Aura does not provide medical or insurance services.",
+        "ht":"Pri yo ka varye selon founisè ak kote. Sa yo se estimasyon mache. Aura pa bay sèvis medikal ni asirans."
+    }[lang]
+
     prompt = f"""
-Aura by May Roga LLC, a medical price intelligence system.
-Do NOT provide medical advice, diagnosis, treatment or insurance guidance.
-Only provide estimated market price ranges for medical and dental services in the United States.
+Aura by May Roga LLC is a medical price intelligence system.
+Never provide medical or insurance advice.
 
-User input: {consulta}
-Detected ZIP: {zip_user}
-SQL results: {sql_results}
-Language: {idioma_destino}
+User: {consulta}
+ZIP: {zip_final}
+SQL DATA: {sql}
 
-Task:
-1) Interpret user input (procedure, symptom, CPT, ICD-10, location)
-2) Infer CPT/ICD if missing
-3) Use SQL if available
-4) If no SQL data, give national market range
+Respond in {idioma}.
 
-Output format:
-First: Simple explanation for users without medical knowledge
-Then: Structured financial breakdown
-- Procedure:
-- CPT or ICD:
-- Location:
-- Market Price Range:
-- Estimated Fair Price:
-- Typical Overcharge:
-- Legal disclaimer at the end:
-Always include:
-"Prices may vary by provider. These are market estimates, not medical or insurance advice."
+Format:
+Simple explanation first.
+Then structured finance:
+
+Procedure:
+CPT/ICD:
+Location:
+Market Price Range:
+Estimated Fair Price:
+Typical Overcharge:
+
+End with this disclaimer:
+{legal}
 """
 
-    # Intentar Gemini 2.5 primero
     try:
-        response = gemini_client.responses.create(
-            model="gemini-2.5",
-            input=prompt,
-            temperature=0.3,
-            max_output_tokens=700
-        )
-        resultado = response.output_text or "Aura está procesando su solicitud. Intente nuevamente en unos segundos."
-    except Exception as e:
-        print(f"[ERROR GEMINI] {e}")
-        # Fallback a OpenAI
+        r = gemini.responses.create(model="gemini-2.5", input=prompt, temperature=0.2, max_output_tokens=700)
+        text = r.output_text
+    except:
         try:
-            completion = openai.ChatCompletion.create(
+            c = openai.ChatCompletion.create(
                 model="gpt-4",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
+                messages=[{"role":"user","content":prompt}],
+                temperature=0.2,
                 max_tokens=700
             )
-            resultado = completion.choices[0].message.content
-        except Exception as ex:
-            print(f"[ERROR OPENAI] {ex}")
-            resultado = "Aura está procesando su solicitud. Intente nuevamente en unos segundos."
+            text = c.choices[0].message.content
+        except:
+            text = legal
 
-    return {"resultado": resultado}
+    return {"resultado": text}
 
-# --- Crear sesión de pago ---
+# ================== PAY ==================
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
-    if plan.lower() == "donacion":
+    if plan=="donacion":
         return {"url": LINK_DONACION}
     try:
-        mode = "subscription" if plan.lower() == "special" else "payment"
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
-            mode=mode,
-            success_url="http://localhost:8000/?success=true",
-            cancel_url="http://localhost:8000/"
+            line_items=[{"price": PRICE_IDS[plan], "quantity": 1}],
+            mode="payment",
+            success_url="https://yourdomain.com/?success=true",
+            cancel_url="https://yourdomain.com/"
         )
         return {"url": session.url}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(status_code=500,content={"error":str(e)})
 
-# --- Login Admin / acceso gratuito ---
+# ================== ADMIN ==================
 @app.post("/login-admin")
-async def login_admin(user: str = Form(...), pw: str = Form(...)):
-    if user == os.getenv("ADMIN_USERNAME") and pw == os.getenv("ADMIN_PASSWORD"):
-        return {"status": "success", "access": "full"}
-    return JSONResponse(status_code=401, content={"status": "error"})
-
+async def admin(user: str = Form(...), pw: str = Form(...)):
+    if user==ADMIN_USER and pw==ADMIN_PASS:
+        return {"status":"success","access":"full"}
+    return JSONResponse(status_code=401,content={"status":"error"})
