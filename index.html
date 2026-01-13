@@ -83,7 +83,7 @@
 let currentLang = 'es';
 let userZip = null;
 
-// DETECCIÓN DE UBICACIÓN AUTOMÁTICA
+// ===== GEOLOCALIZACIÓN =====
 function getGeo() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -93,7 +93,7 @@ function getGeo() {
                 const data = await r.json();
                 userZip = data.postcode || null;
                 document.getElementById('geo-txt').innerText = userZip ? `📍 Ubicación detectada: ZIP ${userZip}` : "📍 Ubicación: USA General";
-            } catch (e) {
+            } catch {
                 document.getElementById('geo-txt').innerText = "📍 Ubicación: USA General";
             }
         });
@@ -101,11 +101,9 @@ function getGeo() {
         document.getElementById('geo-txt').innerText = "📍 Ubicación no disponible";
     }
 }
-
-// INICIALIZAR GEO AL CARGAR
 window.onload = () => { getGeo(); };
 
-// BOTONES Y FUNCIONES PRINCIPALES
+// ===== FUNCIONES PRINCIPALES =====
 if(new URLSearchParams(window.location.search).has('success')) {
     document.getElementById('paywall').style.display = 'none';
     document.getElementById('sistema-aura').style.display = 'block';
@@ -155,7 +153,7 @@ async function pagar(plan) {
         const res = await fetch("/create-checkout-session", { method: "POST", body: fd });
         const data = await res.json();
         if(data.url) window.location.href = data.url;
-    } catch (e) { alert("Error al conectar con Stripe."); }
+    } catch { alert("Error al conectar con Stripe."); }
 }
 
 function readOut() {
