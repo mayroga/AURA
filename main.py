@@ -4,15 +4,17 @@ import stripe
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from google import genai
 from dotenv import load_dotenv
+import openai
+from google import genai  # Gemini 2.5
 
 load_dotenv()
 app = FastAPI()
 
-# 1. Configuración de API Keys
+# ===== CONFIGURACIONES =====
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 PRICE_IDS = {
     "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
@@ -24,15 +26,14 @@ LINK_DONACION = "https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# ===== FUNCIONES INTERNAS =====
 def query_sql(termino):
     try:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(base_dir, 'aura_data.db')
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aura_data.db')
         if not os.path.exists(db_path):
             return "SQL_OFFLINE"
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        # Búsqueda por descripción, CPT, ZIP o Estado
         query = """
         SELECT cpt_code, description, state, zip_code, low_price, high_price
         FROM cost_estimates
@@ -49,25 +50,13 @@ def query_sql(termino):
         print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
 
-@app.get("/", response_class=HTMLResponse)
-async def read_index():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
-        return f.read()
-
-@app.post("/estimado")
-async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es"), zip_user: str = Form(None)):
-    # Priorizamos ZIP si la consulta es corta
-    termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
-    datos_internos = query_sql(termino_final)
-    
+def generar_prompt(consulta, datos_sql, zip_user, lang):
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
-    
-    prompt = f"""
+    return f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
 IDIOMA: {idioma_destino}
-DATOS SQL ENCONTRADOS: {datos_internos}
+DATOS SQL ENCONTRADOS: {datos_sql}
 CONSULTA ORIGINAL: {consulta}
 ZIP DETECTADO: {zip_user}
 
@@ -85,15 +74,55 @@ REGLAS:
 4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
 """
 
+def generar_respuesta(consulta, lang="es", zip_user=None):
+    datos_sql = query_sql(zip_user if zip_user and len(consulta.strip())<5 else consulta)
+    prompt = generar_prompt(consulta, datos_sql, zip_user, lang)
+
+    # ===== 1. Intentar Gemini 2.5 =====
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
+        response = client_gemini.responses.create(
+            model="gemini-2.5",
+            input=prompt,
+            temperature=0.3,
+            max_output_tokens=700
         )
-        return {"resultado": response.text}
+        resultado = response.output_text
+        if resultado:
+            return resultado
     except Exception as e:
         print(f"[ERROR GEMINI] {e}")
-        return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo."}
+
+    # ===== 2. Fallback a OpenAI =====
+    try:
+        completion = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": "Eres AURA, motor financiero de salud de May Roga LLC, solo estimados de precios en USA 2026."},
+                      {"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=700
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"[ERROR OPENAI] {e}")
+
+    # ===== 3. Si todo falla, usar datos internos 2026 =====
+    if datos_sql != "DATO_NO_SQL" and datos_sql != "SQL_OFFLINE":
+        base = "\n".join([f"{r[1]} ({r[0]}): {r[4]}-${r[5]} en {r[2]}, ZIP {r[3]}" for r in datos_sql])
+        return f"BLINDAJE: Este reporte es emitido por Aura by May Roga LLC.\nREPORTE (Datos SQL internos 2026):\n{base}\nCierre: Los precios son estimados de mercado USA 2026."
+    
+    return "Aura no pudo procesar su solicitud, intente nuevamente en unos segundos."
+
+# ===== RUTAS =====
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.post("/estimado")
+async def obtener_estimado(consulta: str = Form(...), lang: str = Form("es"), zip_user: str = Form(None)):
+    resultado = generar_respuesta(consulta, lang, zip_user)
+    return {"resultado": resultado}
 
 @app.post("/create-checkout-session")
 async def pay(plan: str = Form(...)):
@@ -105,8 +134,8 @@ async def pay(plan: str = Form(...)):
             payment_method_types=["card"],
             line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
             mode=mode,
-            success_url="https://aura-iyxa.onrender.com/?success=true",
-            cancel_url="https://aura-iyxa.onrender.com/"
+            success_url=os.getenv("RENDER_APP_URL") + "/?success=true",
+            cancel_url=os.getenv("RENDER_APP_URL") + "/"
         )
         return {"url": session.url}
     except Exception as e:
