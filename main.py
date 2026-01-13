@@ -125,9 +125,13 @@ async def create_checkout(plan: str = Form(...)):
         print(f"[ERROR STRIPE] {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# 8️⃣ Login admin
+# 8️⃣ Login admin / acceso gratuito
 @app.post("/login-admin")
 async def login_admin(user: str = Form(...), pw: str = Form(...)):
-    if user == os.getenv("ADMIN_USERNAME") and pw == os.getenv("ADMIN_PASSWORD"):
-        return {"status": "success"}
+    # ⚡ Aquí agregamos tu acceso gratuito
+    ADMIN_USER = "TU_USERNAME"  # <- Cambia esto por tu username
+    ADMIN_PASS = "TU_PASSWORD"  # <- Cambia esto por tu password
+    # Comprueba si coincide con el acceso gratuito o con la variable de entorno
+    if (user == ADMIN_USER and pw == ADMIN_PASS) or (user == os.getenv("ADMIN_USERNAME") and pw == os.getenv("ADMIN_PASSWORD")):
+        return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
