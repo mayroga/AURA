@@ -5,6 +5,7 @@ from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
+import openai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +13,8 @@ app = FastAPI()
 
 # 1️⃣ Configuración Stripe y Gemini AI
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # 2️⃣ Precios y enlace de donación
 PRICE_IDS = {
@@ -62,20 +64,19 @@ async def read_index():
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado
+# 6️⃣ Obtener estimado con fallback Gemini → OpenAI
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
-    # Priorizamos ZIP si consulta corta
     termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
     datos_sql = query_sql(termino_final)
-    
+
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
-    
+
     prompt = f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
 IDIOMA: {idioma_destino}
@@ -96,15 +97,28 @@ REGLAS:
        * Precio justo (Ahorro):
 4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
 """
+
+    # ⚡ Fallback automático: Gemini → OpenAI → Gemini
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
+        response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         return {"resultado": response.text}
-    except Exception as e:
-        print(f"[ERROR GEMINI] {e}")
-        return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo."}
+    except Exception as e_gemini:
+        print(f"[ERROR GEMINI] {e_gemini}, intentando OpenAI...")
+        try:
+            completion = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5,
+            )
+            return {"resultado": completion.choices[0].message.content}
+        except Exception as e_openai:
+            print(f"[ERROR OPENAI] {e_openai}, reintentando Gemini...")
+            try:
+                response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+                return {"resultado": response.text}
+            except Exception as e_final:
+                print(f"[ERROR GEMINI FINAL] {e_final}")
+                return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo más tarde."}
 
 # 7️⃣ Crear sesión de pago
 @app.post("/create-checkout-session")
@@ -128,10 +142,8 @@ async def create_checkout(plan: str = Form(...)):
 # 8️⃣ Login admin / acceso gratuito
 @app.post("/login-admin")
 async def login_admin(user: str = Form(...), pw: str = Form(...)):
-    # ⚡ Aquí agregamos tu acceso gratuito
-    ADMIN_USER = "TU_USERNAME"  # <- Cambia esto por tu username
-    ADMIN_PASS = "TU_PASSWORD"  # <- Cambia esto por tu password
-    # Comprueba si coincide con el acceso gratuito o con la variable de entorno
-    if (user == ADMIN_USER and pw == ADMIN_PASS) or (user == os.getenv("ADMIN_USERNAME") and pw == os.getenv("ADMIN_PASSWORD")):
+    ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")  # <- tu username aquí
+    ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "TU_PASSWORD")  # <- tu password aquí
+    if (user == ADMIN_USER and pw == ADMIN_PASS):
         return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
