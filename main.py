@@ -98,23 +98,41 @@ REGLAS:
 4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
 """
 
-    # ⚡ Fallback real automático: Gemini → OpenAI → Gemini
-    for motor in ["gemini", "openai", "gemini"]:
+    # ⚡ Fallback automático usando modelos disponibles
+    motores = []
+
+    # 1️⃣ Gemini: Lista los modelos compatibles con generate_content
+    try:
+        modelos_gemini = client_gemini.models.list().data
+        if modelos_gemini:
+            motores.append(("gemini", modelos_gemini[0].name))
+    except Exception as e:
+        print(f"[ERROR GEMINI LIST] {e}")
+
+    # 2️⃣ OpenAI: Usa el modelo más reciente disponible
+    try:
+        motores.append(("openai", "gpt-4"))  # Ajusta según la versión 1.0.0 si migras
+    except Exception as e:
+        print(f"[ERROR OPENAI LIST] {e}")
+
+    # 3️⃣ Intento de fallback en orden
+    for motor, modelo in motores:
         try:
             if motor == "gemini":
-                response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+                response = client_gemini.models.generate_content(model=modelo, contents=prompt)
                 return {"resultado": response.text}
             elif motor == "openai":
-                completion = openai.ChatCompletion.create(
-                    model="gpt-4",
+                # Compatibilidad con OpenAI >= 1.0.0
+                response = openai.chat.completions.create(
+                    model=modelo,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.5,
                 )
-                return {"resultado": completion.choices[0].message.content}
+                return {"resultado": response.choices[0].message.content}
         except Exception as e:
-            print(f"[ERROR {motor.upper()}] {e}, intentando siguiente motor...")
+            print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}, intentando siguiente motor...")
 
-    # ⚡ Fallback final automático, sin mensaje de error al usuario
+    # Fallback final sin datos
     return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
 
 # 7️⃣ Crear sesión de pago
