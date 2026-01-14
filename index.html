@@ -30,21 +30,20 @@ input { padding: 18px; border-radius: 15px; border: 2px solid #00d4ff; backgroun
 <body>
 
 <div class="marquee">
-  <div class="marquee-content">
+  <div class="marquee-content" id="marquee-text">
     🛡️ AURA BY MAY ROGA LLC: ESTIMADOS DE PRECIOS MÉDICOS PARA CONSUMIDORES • TRANSPARENCIA TOTAL • NO SOMOS MÉDICOS NI ASEGURADORAS • SOLO INFORMACIÓN DE MERCADO •
   </div>
 </div>
 
 <div class="container">
-<h1 style="color: #00d4ff; font-size: 4rem; margin: 0;">AURA</h1>
-<div class="yellow">by May Roga LLC</div>
+<h1 style="color: #00d4ff; font-size: 4rem; margin: 0;" id="title-aura">AURA</h1>
+<div class="yellow" id="subtitle-aura">by May Roga LLC</div>
 
-<div class="search-hero">
+<div class="search-hero" id="search-hero">
 CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.<br>
 Introduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado y precio justo.
 </div>
 
-<!-- BOTONES DE IDIOMA Y LOGIN / ADMIN -->
 <div class="lang-box">
   <button class="btn-ex" style="background:#00d4ff; color:#000;" onclick="changeLang('es')">ESPAÑOL</button>
   <button class="btn-ex" style="background:#fff; color:#000;" onclick="changeLang('en')">ENGLISH</button>
@@ -53,17 +52,15 @@ Introduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado
 <div class="login-box">
   <input type="text" id="admin-user" placeholder="Usuario Admin (Opcional)">
   <input type="password" id="admin-pass" placeholder="Contraseña Admin">
-  <button class="btn-pay" onclick="loginAdmin()">ACCEDER GRATIS</button>
+  <button class="btn-pay" onclick="loginAdmin()" id="login-btn">ACCEDER GRATIS</button>
 </div>
 
-<!-- PAYWALL -->
 <div id="paywall">
-  <div class="plan-card"><h4>C. RÁPIDA</h4><p>$5.99</p><button class="btn-pay" onclick="pagar('rapido')">PAGAR ACCESO</button></div>
-  <div class="plan-card"><h4>STANDARD</h4><p>$9.99</p><button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button></div>
-  <div class="plan-card"><h4>ESPECIAL</h4><p>$19.99</p><button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button></div>
+  <div class="plan-card"><h4 class="plan-title">C. RÁPIDA</h4><p class="plan-price">$5.99</p><button class="btn-pay" onclick="pagar('rapido')" id="pay-rapido">PAGAR ACCESO</button></div>
+  <div class="plan-card"><h4 class="plan-title">STANDARD</h4><p class="plan-price">$9.99</p><button class="btn-pay" onclick="pagar('standard')" id="pay-standard">PAGAR ACCESO</button></div>
+  <div class="plan-card"><h4 class="plan-title">ESPECIAL</h4><p class="plan-price">$19.99</p><button class="btn-pay" onclick="pagar('special')" id="pay-special">PAGAR ACCESO</button></div>
 </div>
 
-<!-- SISTEMA AURA -->
 <div id="sistema-aura" style="display:none;">
   <div id="geo-txt">📍 Detectando ubicación para precisión...</div>
 
@@ -72,17 +69,19 @@ Introduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado
     <input type="text" id="q" placeholder="Procedimiento, síntoma o código (ej: MRI, D2750)">
     <button class="clear-btn" onclick="document.getElementById('q').value=''">✖ BORRAR</button>
   </div>
-  <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; margin-top:20px; width:85%;">REVELAR ESTIMADO DE PRECIO</button>
+  <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; margin-top:20px; width:85%;" id="estimate-btn">REVELAR ESTIMADO DE PRECIO</button>
   <div id="res" class="res-box"></div>
+
   <div id="export-bar" style="display:none; margin-top:20px;">
-    <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
-    <button class="btn-ex" style="background:#ffff00; color:#000;" onclick="readOut()">🔊 Escuchar</button>
+    <button class="btn-ex" style="background:#25d366;" onclick="shareWA()" id="wa-btn">WhatsApp 🛡️</button>
+    <button class="btn-ex" style="background:#ffff00; color:#000;" onclick="readOut()" id="read-btn">🔊 Escuchar</button>
+    <button class="btn-ex" style="background:#ff9500; color:#000;" onclick="exportPDF()" id="pdf-btn">🖨️ PDF / Print</button>
   </div>
 </div>
 
 <div class="donacion-box">
-  <h2 style="color:#ffff00; margin-top:0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-  <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
+  <h2 style="color:#ffff00; margin-top:0;" id="donation-title">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
+  <button class="btn-donar" onclick="pagar('donacion')" id="don-btn">REALIZAR DONACIÓN VOLUNTARIA</button>
 </div>
 </div>
 
@@ -96,15 +95,19 @@ function getGeo() {
     navigator.geolocation.getCurrentPosition(async pos=>{
       const { latitude, longitude } = pos.coords;
       try {
-        const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`);
+        const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=${currentLang}`);
         const data = await r.json();
         userZip = data.postcode || null;
-        document.getElementById('geo-txt').innerText = userZip ? `📍 Ubicación detectada: ZIP ${userZip}` : "📍 Ubicación: USA General";
+        document.getElementById('geo-txt').innerText = userZip ? 
+          (currentLang==='es'?`📍 Ubicación detectada: ZIP ${userZip}`:`📍 Location detected: ZIP ${userZip}`) : 
+          (currentLang==='es'? "📍 Ubicación: USA General":"📍 Location: USA General");
       } catch {
-        document.getElementById('geo-txt').innerText = "📍 Ubicación: USA General";
+        document.getElementById('geo-txt').innerText = currentLang==='es'? "📍 Ubicación: USA General":"📍 Location: USA General";
       }
     });
-  } else { document.getElementById('geo-txt').innerText = "📍 Ubicación no disponible"; }
+  } else { 
+    document.getElementById('geo-txt').innerText = currentLang==='es'? "📍 Ubicación no disponible":"📍 Location not available"; 
+  }
 }
 
 window.onload = () => {
@@ -121,7 +124,7 @@ async function getEstimate() {
   if(!q && !userZip) return;
   const resDiv = document.getElementById('res');
   resDiv.style.display='block';
-  resDiv.innerHTML="<h2 style='color:#ffff00;'>Aura analizando mercado...</h2>";
+  resDiv.innerHTML=currentLang==='es'? "<h2 style='color:#ffff00;'>Aura analizando mercado...</h2>" : "<h2 style='color:#ffff00;'>Aura analyzing market...</h2>";
 
   const fd = new FormData();
   fd.append("consulta", q);
@@ -133,13 +136,25 @@ async function getEstimate() {
     const d = await r.json();
     resDiv.innerText = d.resultado;
     document.getElementById('export-bar').style.display='block';
-  } catch { resDiv.innerText = "Error de conexión."; }
+  } catch { 
+    resDiv.innerText = currentLang==='es'? "Error de conexión." : "Connection error.";
+  }
 }
 
 // IDIOMA
 function changeLang(lang){ 
   currentLang = lang;
   document.getElementById('q').placeholder = lang==='es' ? "Procedimiento o síntoma..." : "Procedure or symptom...";
+  document.getElementById('search-hero').innerText = lang==='es' ? 
+    "CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.\nIntroduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado y precio justo." :
+    "CHECK ESTIMATED MEDICAL AND DENTAL PRICES IN USA.\nEnter procedure, symptom, code or location. Get market range and fair price.";
+  document.getElementById('marquee-text').innerText = lang==='es' ?
+    "🛡️ AURA BY MAY ROGA LLC: ESTIMADOS DE PRECIOS MÉDICOS PARA CONSUMIDORES • TRANSPARENCIA TOTAL • NO SOMOS MÉDICOS NI ASEGURADORAS • SOLO INFORMACIÓN DE MERCADO •" :
+    "🛡️ AURA BY MAY ROGA LLC: MEDICAL PRICE ESTIMATES FOR CONSUMERS • TOTAL TRANSPARENCY • NOT DOCTORS OR INSURANCE • MARKET INFO ONLY •";
+  document.getElementById('login-btn').innerText = lang==='es'? "ACCEDER GRATIS":"FREE ACCESS";
+  document.getElementById('estimate-btn').innerText = lang==='es'? "REVELAR ESTIMADO DE PRECIO":"SHOW ESTIMATE";
+  document.getElementById('donation-title').innerText = lang==='es'? "🤝 FONDO DE SOLIDARIDAD Y EMPLEO":"🤝 SOLIDARITY & EMPLOYMENT FUND";
+  document.getElementById('don-btn').innerText = lang==='es'? "REALIZAR DONACIÓN VOLUNTARIA":"MAKE VOLUNTARY DONATION";
 }
 
 // VOZ
@@ -149,7 +164,7 @@ function listen(){
     rec.lang = currentLang==='es'?'es-US':'en-US';
     rec.onresult = e=>{document.getElementById('q').value = e.results[0][0].transcript;};
     rec.start();
-  } catch { alert("Reconocimiento de voz no soportado en este navegador."); }
+  } catch { alert(currentLang==='es'?"Reconocimiento de voz no soportado en este navegador.":"Speech recognition not supported in this browser."); }
 }
 
 // PAGO STRIPE / DONACION
@@ -161,14 +176,14 @@ async function pagar(plan){
     const res=await fetch("/create-checkout-session",{method:"POST",body:fd});
     const data=await res.json();
     if(data.url) window.location.href=data.url;
-  } catch { alert("Error al conectar con Stripe."); }
+  } catch { alert(currentLang==='es'? "Error al conectar con Stripe.":"Error connecting to Stripe."); }
 }
 
 // LOGIN ADMIN / GRATIS
 async function loginAdmin(){
   const user = document.getElementById('admin-user').value.trim();
   const pw = document.getElementById('admin-pass').value.trim();
-  if(!user || !pw) return alert("Ingresa usuario y contraseña.");
+  if(!user || !pw) return alert(currentLang==='es'? "Ingresa usuario y contraseña.":"Enter username and password.");
   const fd = new FormData();
   fd.append("user", user);
   fd.append("pw", pw);
@@ -177,9 +192,9 @@ async function loginAdmin(){
     if(res.status===200){
       document.getElementById('paywall').style.display='none';
       document.getElementById('sistema-aura').style.display='block';
-      alert("Acceso gratuito concedido.");
-    } else { alert("Usuario o contraseña incorrectos."); }
-  } catch { alert("Error de conexión."); }
+      alert(currentLang==='es'? "Acceso gratuito concedido.":"Free access granted.");
+    } else { alert(currentLang==='es'? "Usuario o contraseña incorrectos.":"Incorrect username or password."); }
+  } catch { alert(currentLang==='es'? "Error de conexión.":"Connection error."); }
 }
 
 // LEER
@@ -192,6 +207,15 @@ function readOut(){
 // WHATSAPP
 function shareWA(){
   window.open("https://wa.me/?text="+encodeURIComponent(document.getElementById('res').innerText));
+}
+
+// PDF / PRINT
+function exportPDF(){
+  const content = document.getElementById('res').innerText;
+  const myWindow = window.open('', '', 'width=800,height=600');
+  myWindow.document.write('<pre style="font-family:Arial; white-space:pre-wrap;">'+content+'</pre>');
+  myWindow.document.close();
+  myWindow.print();
 }
 </script>
 </body>
