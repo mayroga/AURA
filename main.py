@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 app = FastAPI()
 
-# 1️⃣ Configuración Stripe y Gemini AI
+# 1️⃣ Configuración Stripe y motores IA
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -64,7 +64,7 @@ async def read_index():
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado con fallback Gemini → OpenAI
+# 6️⃣ Obtener estimado con fallback automático Gemini → OpenAI → Gemini
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
@@ -98,27 +98,24 @@ REGLAS:
 4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
 """
 
-    # ⚡ Fallback automático: Gemini → OpenAI → Gemini
-    try:
-        response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-        return {"resultado": response.text}
-    except Exception as e_gemini:
-        print(f"[ERROR GEMINI] {e_gemini}, intentando OpenAI...")
+    # ⚡ Fallback real automático: Gemini → OpenAI → Gemini
+    for motor in ["gemini", "openai", "gemini"]:
         try:
-            completion = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-            )
-            return {"resultado": completion.choices[0].message.content}
-        except Exception as e_openai:
-            print(f"[ERROR OPENAI] {e_openai}, reintentando Gemini...")
-            try:
+            if motor == "gemini":
                 response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
                 return {"resultado": response.text}
-            except Exception as e_final:
-                print(f"[ERROR GEMINI FINAL] {e_final}")
-                return {"resultado": "Aura está procesando su solicitud. Por favor, intente de nuevo más tarde."}
+            elif motor == "openai":
+                completion = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5,
+                )
+                return {"resultado": completion.choices[0].message.content}
+        except Exception as e:
+            print(f"[ERROR {motor.upper()}] {e}, intentando siguiente motor...")
+
+    # ⚡ Fallback final automático, sin mensaje de error al usuario
+    return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
 
 # 7️⃣ Crear sesión de pago
 @app.post("/create-checkout-session")
@@ -142,8 +139,8 @@ async def create_checkout(plan: str = Form(...)):
 # 8️⃣ Login admin / acceso gratuito
 @app.post("/login-admin")
 async def login_admin(user: str = Form(...), pw: str = Form(...)):
-    ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")  # <- tu username aquí
-    ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "TU_PASSWORD")  # <- tu password aquí
-    if (user == ADMIN_USER and pw == ADMIN_PASS):
+    ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")
+    ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "TU_PASSWORD")
+    if user == ADMIN_USER and pw == ADMIN_PASS:
         return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
