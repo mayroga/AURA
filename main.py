@@ -36,7 +36,7 @@ app.add_middleware(
 def query_sql(termino):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(base_dir, 'aura_data.db')
+        db_path = os.path.join(base_dir, 'cost_estimates.db')
         if not os.path.exists(db_path):
             return "SQL_OFFLINE"
         conn = sqlite3.connect(db_path)
