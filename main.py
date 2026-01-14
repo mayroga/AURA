@@ -32,64 +32,27 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# 4️⃣ Función para consultar SQL con Triángulo de Comparación Total
-def query_sql(termino, zip_user=None):
+# 4️⃣ Función para consultar SQL
+def query_sql(termino):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(base_dir, 'cost_estimates.db')
         if not os.path.exists(db_path):
             return "SQL_OFFLINE"
-
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-
-        busqueda = f"%{termino.strip().upper()}%"
-
-        # 1️⃣ Opciones locales más baratas (ZIP + condado)
-        locals_query = """
+        query = """
         SELECT cpt_code, description, state, zip_code, low_price, high_price
         FROM cost_estimates
-        WHERE (description LIKE ? OR cpt_code LIKE ?)
-        """
-        params = (busqueda, busqueda)
-        if zip_user:
-            locals_query += " AND zip_code = ?"
-            params += (zip_user,)
-        locals_query += " ORDER BY low_price ASC LIMIT 3"
-        cursor.execute(locals_query, params)
-        locales = cursor.fetchall()
-
-        # 2️⃣ Opciones nacionales más baratas
-        cursor.execute("""
-        SELECT cpt_code, description, state, zip_code, low_price, high_price
-        FROM cost_estimates
-        WHERE description LIKE ? OR cpt_code LIKE ?
+        WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
         ORDER BY low_price ASC
         LIMIT 5
-        """, (busqueda, busqueda))
-        nacionales = cursor.fetchall()
-
-        # 3️⃣ Opción premium/cara
-        cursor.execute("""
-        SELECT cpt_code, description, state, zip_code, low_price, high_price
-        FROM cost_estimates
-        WHERE description LIKE ? OR cpt_code LIKE ?
-        ORDER BY high_price DESC
-        LIMIT 1
-        """, (busqueda, busqueda))
-        premium = cursor.fetchall()
-
+        """
+        busqueda = f"%{termino.strip().upper()}%"
+        cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
+        results = cursor.fetchall()
         conn.close()
-
-        if not (locales or nacionales or premium):
-            return "DATO_NO_SQL"
-
-        return {
-            "locales": locales,
-            "nacionales": nacionales,
-            "premium": premium
-        }
-
+        return results if results else "DATO_NO_SQL"
     except Exception as e:
         print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
@@ -101,19 +64,21 @@ async def read_index():
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado con Triángulo de Comparación + IA
+# 6️⃣ Obtener estimado con análisis estratégico completo
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
+    # Determinar término final para SQL
     termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
-    datos_sql = query_sql(termino_final, zip_user=zip_user)
+    datos_sql = query_sql(termino_final)
 
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
 
+    # Prompt base para IA
     prompt = f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
 IDIOMA: {idioma_destino}
@@ -121,32 +86,36 @@ DATOS SQL ENCONTRADOS: {datos_sql}
 CONSULTA ORIGINAL: {consulta}
 ZIP DETECTADO: {zip_user}
 
-OBJETIVO:
-- Democratizar el costo de la salud en EE. UU. mediante transparencia radical.
-- Mostrar 3 opciones locales más baratas, 5 nacionales más baratas y 1 premium.
-- Comparar cash price vs insurance price cuando sea posible.
-- Incluir notas para clínicas que aceptan pacientes sin seguro.
-- Mantener neutralidad socioeconómica y cierre de autoridad.
-
-SALIDA ESTRUCTURADA:
-- BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
-- REPORTE:
-    * Procedimiento/Síntoma:
-    * CPT o ICD (si aplica):
-    * Ubicación sugerida:
-    * Condado + ZIP:
-    * Opciones locales más baratas:
-    * Opciones nacionales más baratas:
-    * Opción premium/cara:
-    * Comparación cash price vs insurance:
-    * Notas clínicas:
-- CIERRE: "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
+REGLAS:
+1) Usa los datos SQL si existen.
+2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
+3) SALIDA ESTRUCTURADA:
+   - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
+   - REPORTE:
+       * Procedimiento/Síntoma:
+       * CPT o ICD (si aplica):
+       * Ubicación sugerida:
+       * Condado + ZIP:
+       * Opciones locales más baratas (Top 3):
+       * Opciones nacionales más baratas (Top 5):
+       * Opción premium/cara:
+       * Comparación cash price vs insurance:
+       * Notas clínicas:
+       * Precio Justo (Fair Price):
+       * Ahorro Real vs Premium:
+       * Diagnóstico de Mercado:
+       * Cálculo de Eficiencia:
+4) ACTIVACIÓN CONSULTA DE DUDAS:
+   "He analizado 150 puntos de datos para este presupuesto. Tienes tiempo disponible en tu suscripción: 
+    ¿Quieres que te explique cómo usar estos precios para negociar con tu clínica o por qué la opción de otro estado es más barata?"
+5) CIERRE:
+   "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
 """
 
-    # ⚡ Fallback automático usando modelos disponibles
+    # ⚡ Fallback automático usando motores disponibles
     motores = []
 
-    # 1️⃣ Gemini: Lista los modelos compatibles con generate_content
+    # 1️⃣ Gemini
     try:
         modelos_gemini = client_gemini.models.list().data
         if modelos_gemini:
@@ -154,7 +123,7 @@ SALIDA ESTRUCTURADA:
     except Exception as e:
         print(f"[ERROR GEMINI LIST] {e}")
 
-    # 2️⃣ OpenAI: Usa el modelo más reciente disponible
+    # 2️⃣ OpenAI
     try:
         motores.append(("openai", "gpt-4"))
     except Exception as e:
