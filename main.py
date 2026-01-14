@@ -64,7 +64,7 @@ async def read_index():
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado con fallback automático Gemini → OpenAI → Gemini
+# 6️⃣ Obtener estimado con Triángulo de Comparación Total y métricas disruptivas
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
@@ -78,30 +78,37 @@ async def obtener_estimado(
     idioma_destino = idiomas.get(lang, "Español")
 
     prompt = f"""
-ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
-IDIOMA: {idioma_destino}
+ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. TU OBJETIVO: 
+Democratizar el costo de la salud en EE. UU. mediante transparencia radical. 
+Brinda comparativos locales, nacionales y premium, cash vs insurance, notas de clínicas, precio justo, sin discriminar por nivel socioeconómico ni cobertura.
+
 DATOS SQL ENCONTRADOS: {datos_sql}
 CONSULTA ORIGINAL: {consulta}
 ZIP DETECTADO: {zip_user}
 
-REGLAS:
-1) Usa los datos SQL si existen.
-2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
-3) SALIDA ESTRUCTURADA:
-   - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
-   - REPORTE:
-       * Procedimiento/Síntoma:
-       * CPT o ICD (si aplica):
-       * Ubicación sugerida:
-       * Rango de mercado:
-       * Precio justo (Ahorro):
-4) CIERRE: "Los precios pueden variar por proveedor. Estos son estimados de mercado, no precios garantizados ni asesoría médica."
+REGLAS DE SALIDA:
+1) Triángulo de Comparación Total:
+   - 3 opciones más baratas locales (ZIP/Condado)
+   - 5 opciones más baratas nacionales
+   - 1 opción premium/cara
+2) Para cada opción mostrar:
+   - Procedimiento/Síntoma
+   - CPT/ICD si aplica
+   - Ubicación (Condado + ZIP)
+   - Precio cash (sin seguro)
+   - Precio con seguro (insurance rate)
+   - Notas clínicas para pacientes sin seguro
+   - Precio justo recomendado (ahorro)
+3) Exponer la diferencia cash vs insurance para desmantelar precios inflados
+4) Usa SQL si hay datos, IA predictiva si faltan
+5) Neutralidad y accesibilidad tipo "Zillow" (misma data para todos)
+6) Cierre con cláusula de autoridad de mercado:
+   "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni una aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
 """
 
-    # ⚡ Fallback automático usando modelos disponibles
+    # ⚡ Fallback automático usando motores disponibles
     motores = []
 
-    # 1️⃣ Gemini: Lista los modelos compatibles con generate_content
     try:
         modelos_gemini = client_gemini.models.list().data
         if modelos_gemini:
@@ -109,20 +116,17 @@ REGLAS:
     except Exception as e:
         print(f"[ERROR GEMINI LIST] {e}")
 
-    # 2️⃣ OpenAI: Usa el modelo más reciente disponible
     try:
-        motores.append(("openai", "gpt-4"))  # Ajusta según la versión 1.0.0 si migras
+        motores.append(("openai", "gpt-4"))
     except Exception as e:
         print(f"[ERROR OPENAI LIST] {e}")
 
-    # 3️⃣ Intento de fallback en orden
     for motor, modelo in motores:
         try:
             if motor == "gemini":
                 response = client_gemini.models.generate_content(model=modelo, contents=prompt)
                 return {"resultado": response.text}
             elif motor == "openai":
-                # Compatibilidad con OpenAI >= 1.0.0
                 response = openai.chat.completions.create(
                     model=modelo,
                     messages=[{"role": "user", "content": prompt}],
@@ -132,8 +136,8 @@ REGLAS:
         except Exception as e:
             print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}, intentando siguiente motor...")
 
-    # Fallback final sin datos
     return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
+
 
 # 7️⃣ Crear sesión de pago
 @app.post("/create-checkout-session")
