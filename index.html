@@ -1,126 +1,131 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA by May Roga LLC</title>
-
-<style>
-body{font-family:'Segoe UI',Arial;background:#000;color:#fff;margin:0;text-align:center}
-.marquee{background:#001a33;border-bottom:2px solid #00d4ff;overflow:hidden;white-space:nowrap;padding:15px 0}
-.marquee-content{display:inline-block;animation:scroll 35s linear infinite;color:#00d4ff;font-weight:900;font-size:1.2rem}
-@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.container{max-width:900px;margin:auto;padding:25px;border:3px solid #00d4ff;border-radius:40px;background:#080808;margin-top:10px}
-.yellow{color:#ff0;font-weight:bold;font-size:1.5rem}
-.search-hero{font-size:1.3rem;color:#00d4ff;font-weight:bold;margin:20px 0;border:1px dashed #00d4ff;padding:20px;border-radius:20px}
-.plan-card{border:2px solid #00d4ff;border-radius:20px;padding:15px;margin:10px;display:inline-block;width:28%;background:#0a0a0a}
-.btn-pay{background:#00d4ff;color:#000;border:none;padding:15px;border-radius:12px;font-weight:bold;cursor:pointer;width:100%;font-size:1.1rem}
-input{padding:18px;border-radius:15px;border:2px solid #00d4ff;background:#000;color:#fff;margin:10px;width:100%;font-size:1.2rem}
-.res-box{text-align:left;padding:25px;border:1px dashed #00d4ff;background:#050505;margin-top:25px;font-size:1.1rem;white-space:pre-wrap;display:none}
-.btn-ex{padding:12px;border-radius:10px;border:none;font-weight:bold;cursor:pointer;margin:5px;color:#fff}
-.login-box{margin:20px auto;padding:20px;border:2px solid #00d4ff;border-radius:25px;max-width:400px;background:#0a0a0a}
-#geo-txt{color:#ff0;font-size:.9rem;font-weight:bold}
-.map-box{margin-top:25px;border:2px dashed #00d4ff;border-radius:20px;padding:20px}
-</style>
+    <meta charset="UTF-8">
+    <title>AURA by May Roga LLC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSS simple -->
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
+        header { background: #6c63ff; color: white; padding: 1rem; text-align: center; }
+        main { padding: 1rem; max-width: 800px; margin: auto; }
+        input, select, button { padding: 0.5rem; margin: 0.3rem 0; width: 100%; }
+        button { cursor: pointer; background-color: #6c63ff; color: white; border: none; border-radius: 5px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .btn-group button { flex: 1; }
+        #resultado { margin-top: 1rem; background: #fff; padding: 1rem; border-radius: 5px; box-shadow: 0 0 5px #aaa; white-space: pre-wrap; }
+    </style>
 </head>
-
 <body>
 
-<div class="marquee">
-<div class="marquee-content" id="marquee-text">
-🛡️ AURA BY MAY ROGA LLC • ESTIMADOS DE PRECIOS • INFORMACIÓN PÚBLICA • NO MÉDICOS • NO ASEGURADORAS •
-</div>
-</div>
+<header>
+    <h1>AURA - Estimador de Costos Médicos y Dentales</h1>
+    <p>Transparencia financiera en salud | May Roga LLC</p>
+</header>
 
-<div class="container">
-<h1 style="color:#00d4ff;font-size:4rem;margin:0">AURA</h1>
-<div class="yellow">by May Roga LLC</div>
+<main>
 
-<div class="search-hero" id="search-hero">
-Consulta precios médicos y dentales en USA.<br>
-Basado en mercado público y Google Maps.
-</div>
+    <!-- Selección de idioma -->
+    <label for="lang">Idioma / Language / Kreyòl:</label>
+    <select id="lang">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="ht">Kreyòl (Haitian Creole)</option>
+    </select>
 
-<div class="login-box">
-<input id="admin-user" placeholder="Usuario Admin (opcional)">
-<input id="admin-pass" type="password" placeholder="Contraseña Admin">
-<button class="btn-pay" onclick="loginAdmin()">ACCEDER GRATIS</button>
-</div>
+    <!-- Input de búsqueda -->
+    <label for="consulta">Procedimiento o código CPT:</label>
+    <input type="text" id="consulta" placeholder="Ej. Root Canal, D3330">
 
-<div id="paywall">
-<div class="plan-card"><h4>RÁPIDO</h4><p>$5.99</p><button class="btn-pay" onclick="pagar('rapido')">PAGAR</button></div>
-<div class="plan-card"><h4>STANDARD</h4><p>$9.99</p><button class="btn-pay" onclick="pagar('standard')">PAGAR</button></div>
-<div class="plan-card"><h4>ESPECIAL</h4><p>$19.99</p><button class="btn-pay" onclick="pagar('special')">PAGAR</button></div>
-</div>
+    <!-- Input ZIP opcional -->
+    <label for="zip_user">ZIP (opcional, para resultados locales):</label>
+    <input type="text" id="zip_user" placeholder="Ej. 33167">
 
-<div id="sistema-aura" style="display:none">
-<div id="geo-txt">📍 Detectando ubicación…</div>
+    <!-- Botones principales -->
+    <div class="btn-group">
+        <button onclick="obtenerEstimado('rapido')">Estimado Rápido</button>
+        <button onclick="obtenerEstimado('standard')">Estimado Standard</button>
+        <button onclick="obtenerEstimado('special')">Estimado Especial</button>
+        <button onclick="pagarDonacion()">Donación</button>
+    </div>
 
-<input id="q" placeholder="Procedimiento, código o servicio">
+    <!-- Botones secundarios -->
+    <div class="btn-group">
+        <button onclick="copiarWhatsApp()">Enviar WhatsApp</button>
+        <button onclick="imprimirReporte()">Imprimir</button>
+        <button onclick="generarPDF()">Descargar PDF</button>
+        <button onclick="borrarCampos()">Borrar</button>
+    </div>
 
-<button class="btn-pay" onclick="getEstimate()">REVELAR ESTIMADO</button>
+    <!-- Resultado -->
+    <div id="resultado">Aquí se mostrará tu estimado...</div>
 
-<div id="res" class="res-box"></div>
+</main>
 
-<div class="map-box" id="map-box" style="display:none">
-<h3 style="color:#ff0">📍 OPCIONES REALES EN GOOGLE MAPS</h3>
-
-<button class="btn-ex" style="background:#25d366"
-onclick="openMaps('local')">🔎 Ver opciones LOCALES</button>
-
-<button class="btn-ex" style="background:#ff9500"
-onclick="openMaps('national')">🌎 Ver opciones NACIONALES</button>
-
-<p style="font-size:.85rem;color:#aaa;margin-top:10px">
-AURA no muestra datos propios de clínicas.  
-Redirige a Google Maps (datos públicos).
-</p>
-</div>
-</div>
-</div>
-
+<!-- ===============================
+     JS FUNCIONALIDAD
+=============================== -->
 <script>
-let userZip=null
+const BASE_URL = "https://aura-iyxa.onrender.com"; // tu main.py desplegado en Render
 
-navigator.geolocation?.getCurrentPosition(p=>{
-fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}`)
-.then(r=>r.json()).then(d=>{
-userZip=d.postcode||null
-document.getElementById("geo-txt").innerText=userZip?`📍 ZIP ${userZip}`:"📍 USA General"
-})
-})
+async function obtenerEstimado(plan) {
+    const consulta = document.getElementById("consulta").value;
+    const zip_user = document.getElementById("zip_user").value;
+    const lang = document.getElementById("lang").value;
 
-function getEstimate(){
-const q=document.getElementById("q").value.trim()
-if(!q)return alert("Ingrese un término")
-document.getElementById("res").style.display="block"
-document.getElementById("res").innerText=
-`🔎 CONSULTA: ${q}
+    if(!consulta) { alert("Por favor ingresa un procedimiento o CPT."); return; }
 
-📊 RANGO DE MERCADO ESTIMADO:
-$XXX – $XXXX
+    const formData = new FormData();
+    formData.append("consulta", consulta);
+    formData.append("zip_user", zip_user);
+    formData.append("lang", lang);
 
-⚠️ Información educativa basada en mercado público.
-No sustituye cotización médica real.`
+    const res = await fetch(`${BASE_URL}/estimado`, {
+        method: "POST",
+        body: formData
+    });
 
-document.getElementById("map-box").style.display="block"
+    const data = await res.json();
+    document.getElementById("resultado").textContent = data.resultado;
 }
 
-function openMaps(type){
-const q=document.getElementById("q").value
-let url="https://www.google.com/maps/search/"
-if(type==="local" && userZip) url+=encodeURIComponent(q+" "+userZip)
-else url+=encodeURIComponent(q+" USA")
-window.open(url,"_blank")
+// ===============================
+// STRIPE DONACION
+// ===============================
+async function pagarDonacion() {
+    const formData = new FormData();
+    formData.append("plan", "donacion");
+    const res = await fetch(`${BASE_URL}/create-checkout-session`, { method: "POST", body: formData });
+    const data = await res.json();
+    window.open(data.url, "_blank");
 }
 
-function pagar(plan){
-alert("Stripe conectado desde backend")
+// ===============================
+// BOTONES SECUNDARIOS
+// ===============================
+function copiarWhatsApp() {
+    const txt = document.getElementById("resultado").textContent;
+    const phone = "1234567890"; // tu WhatsApp oficial
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(txt)}`;
+    window.open(url, "_blank");
 }
 
-function loginAdmin(){
-document.getElementById("paywall").style.display="none"
-document.getElementById("sistema-aura").style.display="block"
+function imprimirReporte() {
+    const contenido = document.getElementById("resultado").innerHTML;
+    const w = window.open("", "", "width=800,height=600");
+    w.document.write(contenido);
+    w.document.close();
+    w.print();
+}
+
+function generarPDF() {
+    alert("Función PDF no implementada en este demo, pero se puede integrar con jsPDF.");
+}
+
+function borrarCampos() {
+    document.getElementById("consulta").value = "";
+    document.getElementById("zip_user").value = "";
+    document.getElementById("resultado").textContent = "Aquí se mostrará tu estimado...";
 }
 </script>
 
