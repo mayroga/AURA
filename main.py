@@ -4,18 +4,15 @@ import stripe
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from google import genai
-import openai
-import urllib.parse
+from dotenv import load_dotenv
 
-app = FastAPI(title="AURA Medical Financial Intelligence")
+load_dotenv()
+app = FastAPI()
 
-# ===============================
-# STRIPE & IA
-# ===============================
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")  # Clave secreta desde Render
-client_gemini = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# ==============================
+# STRIPE
+# ==============================
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")  # desde Render
 
 PRICE_IDS = {
     "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
@@ -24,9 +21,9 @@ PRICE_IDS = {
 }
 LINK_DONACION = "https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"
 
-# ===============================
+# ==============================
 # CORS
-# ===============================
+# ==============================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,128 +31,82 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ===============================
-# FUNCION SQL LOCAL + NACIONAL
-# ===============================
-def query_sql_dual(termino: str):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    busqueda = f"%{termino.strip().upper()}%"
-    data = {"local": [], "nacional": []}
-
+# ==============================
+# FUNCIONES SQL
+# ==============================
+def query_sql(termino):
     try:
-        # Local
-        db_local = os.path.join(base_dir, "cost_estimates.db")
-        if os.path.exists(db_local):
-            conn = sqlite3.connect(db_local)
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT cpt_code, description, state, city, zip_code, low_price, high_price
-                FROM cost_estimates
-                WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
-                ORDER BY low_price ASC
-            """, (busqueda, busqueda, busqueda, busqueda))
-            data["local"] = cur.fetchall()
-            conn.close()
-
-        # Nacional
-        db_nat = os.path.join(base_dir, "fbi_national.db")
-        if os.path.exists(db_nat):
-            conn = sqlite3.connect(db_nat)
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT cpt_code, description, state, city, zip_code, low_price, high_price
-                FROM fbi_cost_estimates
-                WHERE description LIKE ? OR cpt_code LIKE ?
-                ORDER BY low_price ASC
-            """, (busqueda, busqueda))
-            data["nacional"] = cur.fetchall()
-            conn.close()
-
-        return data if data["local"] or data["nacional"] else "NO_SQL_DATA"
-
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cost_estimates.db')
+        if not os.path.exists(db_path):
+            return "SQL_OFFLINE"
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        query = """
+        SELECT cpt_code, procedure_name, state, county, zip_code, low_price, high_price, low_price_ins, high_price_ins, notes
+        FROM cost_estimates
+        WHERE procedure_name LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
+        ORDER BY low_price ASC
+        """
+        busqueda = f"%{termino.strip().upper()}%"
+        cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
+        results = cursor.fetchall()
+        conn.close()
+        return results if results else "DATO_NO_SQL"
     except Exception as e:
-        return f"SQL_ERROR: {str(e)}"
+        print(f"[ERROR SQL] {e}")
+        return f"ERROR_SQL: {str(e)}"
 
-# ===============================
-# GOOGLE MAPS LINKS
-# ===============================
-def google_maps_links(query: str, zip_user: str = None):
-    base = "https://www.google.com/maps/search/"
-    local_q = f"{query} {zip_user}" if zip_user else f"{query} near me"
-    national_q = f"{query} USA"
-    return {
-        "local_maps": base + urllib.parse.quote(local_q),
-        "national_maps": base + urllib.parse.quote(national_q)
-    }
-
-# ===============================
-# INDEX
-# ===============================
+# ==============================
+# RUTA PRINCIPAL
+# ==============================
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    path = os.path.join(os.path.dirname(__file__), "index.html")
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>AURA by May Roga LLC</h1>"
+async def read_index():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
+        return f.read()
 
-# ===============================
-# ESTIMADO
-# ===============================
+# ==============================
+# OBTENER ESTIMADO
+# ==============================
 @app.post("/estimado")
-async def estimado(
+async def obtener_estimado(
     consulta: str = Form(...),
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
-    termino = zip_user if zip_user and len(consulta.strip()) < 5 else consulta
-    datos = query_sql_dual(termino)
-    maps = google_maps_links(consulta, zip_user)
+    termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
+    datos_sql = query_sql(termino_final)
 
-    idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl"}
-    idioma = idiomas.get(lang, "Español")
+    idioma_map = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
+    idioma_destino = idioma_map.get(lang, "Español")
 
-    prompt = f"""
-ERES AURA, SISTEMA DE INTELIGENCIA FINANCIERA MÉDICA.
-IDIOMA: {idioma}
-CONSULTA: {consulta}
-ZIP USUARIO: {zip_user}
+    # ==============================
+    # Reporte básico con SQL
+    # ==============================
+    if datos_sql in ["SQL_OFFLINE", "DATO_NO_SQL"]:
+        return {"resultado": f"⚠ No se encontraron datos locales. Intentar otra búsqueda o usar Google Maps opcional."}
 
-DATOS DISPONIBLES:
-{datos}
-
-REGLAS LEGALES:
-- No diagnóstico
-- No recomendación médica
-- Datos públicos y federales
-"""
-
-    try:
-        r = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-        texto = r.text
-    except Exception:
-        r = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
+    resultado = f"🔹 ESTIMADO DE MERCADO ({idioma_destino})\n"
+    for r in datos_sql[:10]:  # mostrar max 10 resultados
+        cpt, proc, state, county, zip_code, low, high, low_ins, high_ins, notes = r
+        resultado += (
+            f"\nProcedimiento: {proc}\nCPT: {cpt}\nUbicación: {state}, {county}\nZIP: {zip_code}\n"
+            f"Precio Cash: ${low} - ${high}\nPrecio Insurance: ${low_ins} - ${high_ins}\nNotas: {notes}\n"
         )
-        texto = r.choices[0].message.content
 
-    texto += f"""
+    # ==============================
+    # Google Maps opcional
+    # ==============================
+    if zip_user:
+        resultado += f"\n📍 Ver en Google Maps: https://www.google.com/maps/search/?api=1&query={zip_user}"
 
-🔗 GOOGLE MAPS
-Locales: {maps['local_maps']}
-Nacionales: {maps['national_maps']}
-⚠️ Datos de Google Maps son públicos; Aura no los controla.
-"""
+    return {"resultado": resultado}
 
-    return {"resultado": texto}
-
-# ===============================
-# STRIPE CHECKOUT
-# ===============================
+# ==============================
+# CREAR CHECKOUT STRIPE
+# ==============================
 @app.post("/create-checkout-session")
-async def checkout(plan: str = Form(...)):
+async def create_checkout(plan: str = Form(...)):
     if plan.lower() == "donacion":
         return {"url": LINK_DONACION}
     try:
@@ -169,15 +120,16 @@ async def checkout(plan: str = Form(...)):
         )
         return {"url": session.url}
     except Exception as e:
+        print(f"[ERROR STRIPE] {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# ===============================
-# LOGIN ADMIN
-# ===============================
+# ==============================
+# LOGIN ADMIN / ACCESO GRATUITO
+# ==============================
 @app.post("/login-admin")
 async def login_admin(user: str = Form(...), pw: str = Form(...)):
-    ADMIN_USER = os.environ.get("ADMIN_USERNAME")
-    ADMIN_PASS = os.environ.get("ADMIN_PASSWORD")
+    ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")
+    ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "TU_PASSWORD")
     if user == ADMIN_USER and pw == ADMIN_PASS:
         return {"status": "success", "access": "full"}
-    return JSONResponse(status_code=401, content={"status": "denied"})
+    return JSONResponse(status_code=401, content={"status": "error"})
