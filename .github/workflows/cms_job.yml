@@ -1,3 +1,26 @@
+import sqlite3
+
+conn = sqlite3.connect("cost_estimates.db")
+c = conn.cursor()
+
+# Crear tabla si no existe
+c.execute("""
+CREATE TABLE IF NOT EXISTS cost_estimates (
+    procedure_name TEXT,
+    cpt_code TEXT,
+    state TEXT,
+    county TEXT,
+    zip_code TEXT,
+    low_price REAL,
+    high_price REAL,
+    low_price_ins REAL,
+    high_price_ins REAL,
+    notes TEXT
+)
+""")
+conn.commit()
+conn.close()
+
 name: CMS Monthly Data Refresh
 
 # 🔹 Se ejecuta automáticamente el día 1 de cada mes a las 03:00 AM UTC
