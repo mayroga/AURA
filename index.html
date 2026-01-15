@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA by May Roga LLC</title>
+<title>AURA BY MAY ROGA LLC</title>
 <style>
   body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; }
   .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 15px 0; }
@@ -25,6 +25,7 @@
   .login-box input { width: 80%; margin: 10px auto; display: block; }
   .login-box button { width: 85%; }
   .lang-box { margin-bottom: 20px; }
+  .btn-map { background:#ff4d4d; color:#fff; border:none; padding:12px 20px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px; display:none; }
 </style>
 </head>
 <body>
@@ -37,7 +38,7 @@
 
 <div class="container">
   <h1 style="color: #00d4ff; font-size: 4rem; margin: 0;" id="title-aura">AURA</h1>
-  <div class="yellow" id="subtitle-aura">by May Roga LLC</div>
+  <div class="yellow" id="subtitle-aura">BY MAY ROGA LLC</div>
 
   <div class="search-hero" id="search-hero">
     CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.<br>
@@ -70,6 +71,7 @@
       <button class="clear-btn" onclick="document.getElementById('q').value=''">✖ BORRAR</button>
     </div>
     <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; margin-top:20px; width:85%;">REVELAR ESTIMADO DE PRECIO</button>
+    <button class="btn-map" id="btn-map" onclick="openMap()">Abrir en Google Maps</button>
     <div id="res" class="res-box"></div>
     <div id="export-bar" style="display:none; margin-top:20px;">
       <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
@@ -97,12 +99,21 @@ function getGeo() {
         const data = await r.json();
         userZip = data.postcode || null;
         document.getElementById('geo-txt').innerText = userZip ? `📍 Ubicación detectada: ZIP ${userZip}` : "📍 Ubicación: USA General";
+        if(userZip) document.getElementById('btn-map').style.display = 'inline-block';
       } catch {
         document.getElementById('geo-txt').innerText = "📍 Ubicación: USA General";
       }
     });
   } else {
     document.getElementById('geo-txt').innerText = "📍 Ubicación no disponible";
+  }
+}
+
+function openMap(){
+  if(userZip){
+    window.open(`https://www.google.com/maps/search/?api=1&query=${userZip}`, '_blank');
+  } else {
+    alert("ZIP no disponible para abrir en Google Maps.");
   }
 }
 
@@ -121,9 +132,6 @@ function changeLang(lang){
   document.getElementById('search-hero').innerText = lang==='es' ? "CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.\nIntroduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado y precio justo." : lang==='en' ? "CHECK ESTIMATED MEDICAL AND DENTAL PRICES IN USA.\nEnter procedure, symptom, code or location. Get market range and fair price." : "Tcheke pri medikal ak dantè estime Ozetazini.\nAntre pwosedi, sentòm, kòd oswa kote. Jwenn ranje mache ak pri jis.";
   document.getElementById('marquee-text').innerText = lang==='es' ? "🛡️ AURA BY MAY ROGA LLC: ESTIMADOS DE PRECIOS MÉDICOS PARA CONSUMIDORES • TRANSPARENCIA TOTAL • NO SOMOS MÉDICOS NI ASEGURADORAS • SOLO INFORMACIÓN DE MERCADO •" : lang==='en' ? "🛡️ AURA BY MAY ROGA LLC: MEDICAL PRICE ESTIMATES FOR CONSUMERS • TOTAL TRANSPARENCY • NOT DOCTORS OR INSURANCE • MARKET INFO ONLY •" : "🛡️ AURA BY MAY ROGA LLC: ESTIME PRI MEDIKAL POU KONSOMATÈ • TRANSPARANS TOTAL • NO SE MEDIKOS OSWA ASIRANS • SÈLMAN ENFÒMASYON SOU MACHE •";
   document.getElementById('login-btn').innerText = lang==='es'? "ACCEDER GRATIS": lang==='en'? "FREE ACCESS":"AKSE GRATIS";
-  document.getElementById('estimate-btn').innerText = lang==='es'? "REVELAR ESTIMADO DE PRECIO": lang==='en'? "SHOW ESTIMATE":"MONTRE PRI";
-  document.getElementById('donation-title').innerText = lang==='es'? "🤝 FONDO DE SOLIDARIDAD Y EMPLEO": lang==='en'? "🤝 SOLIDARITY & EMPLOYMENT FUND":"🤝 FON SYANS & ANPLWA";
-  document.getElementById('don-btn').innerText = lang==='es'? "REALIZAR DONACIÓN VOLUNTARIA": lang==='en'? "MAKE VOLUNTARY DONATION":"FÈ DON VOLONTE";
 }
 
 // Funciones de voz
