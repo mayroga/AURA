@@ -32,14 +32,14 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# 4️⃣ Función para consultar SQL actualizada con respaldo FBI
+# 4️⃣ Función para consultar SQL con respaldo FBI
 def query_sql(termino):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         resultados = []
         busqueda = f"%{termino.strip().upper()}%"
 
-        # 1️⃣ Buscar en DB local
+        # DB local
         db_local = os.path.join(base_dir, 'cost_estimates.db')
         if os.path.exists(db_local):
             conn = sqlite3.connect(db_local)
@@ -54,9 +54,9 @@ def query_sql(termino):
             resultados = cursor.fetchall()
             conn.close()
             if resultados:
-                return resultados  # si hay resultados locales, ya los devolvemos
+                return resultados
 
-        # 2️⃣ Buscar en DB nacional del FBI si local no tiene
+        # DB nacional FBI
         db_fbi = os.path.join(base_dir, 'fbi_national.db')
         if os.path.exists(db_fbi):
             conn = sqlite3.connect(db_fbi)
@@ -73,7 +73,7 @@ def query_sql(termino):
             if resultados_nacional:
                 return resultados_nacional
 
-        return "DATO_NO_SQL"  # si no hay en ninguna DB
+        return "DATO_NO_SQL"
 
     except Exception as e:
         print(f"[ERROR SQL] {e}")
@@ -86,21 +86,19 @@ async def read_index():
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado con análisis estratégico completo
+# 6️⃣ Obtener estimado
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
-    # Determinar término final para SQL
     termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
     datos_sql = query_sql(termino_final)
 
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
 
-    # Prompt base para IA
     prompt = f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
 IDIOMA: {idioma_destino}
@@ -134,10 +132,8 @@ REGLAS:
    "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
 """
 
-    # ⚡ Fallback automático usando motores disponibles
     motores = []
 
-    # 1️⃣ Gemini
     try:
         modelos_gemini = client_gemini.models.list().data
         if modelos_gemini:
@@ -145,13 +141,11 @@ REGLAS:
     except Exception as e:
         print(f"[ERROR GEMINI LIST] {e}")
 
-    # 2️⃣ OpenAI
     try:
         motores.append(("openai", "gpt-4"))
     except Exception as e:
         print(f"[ERROR OPENAI LIST] {e}")
 
-    # 3️⃣ Intento de fallback en orden
     for motor, modelo in motores:
         try:
             if motor == "gemini":
@@ -196,16 +190,16 @@ async def login_admin(user: str = Form(...), pw: str = Form(...)):
     if user == ADMIN_USER and pw == ADMIN_PASS:
         return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
-# 9️⃣ Función para poblar la DB con dentist_codes.py
+
+# 9️⃣ Función opcional para poblar la DB desde dentist_codes.py
 def populate_dentist_codes():
-    import dentist_codes  # nuestro módulo con todos los códigos
+    import dentist_codes
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_local = os.path.join(base_dir, 'cost_estimates.db')
     conn = sqlite3.connect(db_local)
     cursor = conn.cursor()
 
-    # Crear tabla si no existe
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cost_estimates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -218,7 +212,6 @@ def populate_dentist_codes():
         )
     """)
 
-    # Insertar códigos
     for code in dentist_codes.dentist_codes:
         cursor.execute("""
             INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price)
@@ -229,5 +222,5 @@ def populate_dentist_codes():
     conn.close()
     print("[INFO] Base de datos poblada con códigos de odontología.")
 
-# ⚡ Llamada automática al iniciar main.py (opcional, solo si quieres poblar al inicio)
+# ⚡ Descomenta si quieres poblar al inicio
 # populate_dentist_codes()
