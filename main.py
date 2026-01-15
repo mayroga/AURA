@@ -32,27 +32,49 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# 4️⃣ Función para consultar SQL
+# 4️⃣ Función para consultar SQL actualizada con respaldo FBI
 def query_sql(termino):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(base_dir, 'cost_estimates.db')
-        if not os.path.exists(db_path):
-            return "SQL_OFFLINE"
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        query = """
-        SELECT cpt_code, description, state, zip_code, low_price, high_price
-        FROM cost_estimates
-        WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
-        ORDER BY low_price ASC
-        LIMIT 5
-        """
+        resultados = []
         busqueda = f"%{termino.strip().upper()}%"
-        cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
-        results = cursor.fetchall()
-        conn.close()
-        return results if results else "DATO_NO_SQL"
+
+        # 1️⃣ Buscar en DB local
+        db_local = os.path.join(base_dir, 'cost_estimates.db')
+        if os.path.exists(db_local):
+            conn = sqlite3.connect(db_local)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT cpt_code, description, state, zip_code, low_price, high_price
+                FROM cost_estimates
+                WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
+                ORDER BY low_price ASC
+                LIMIT 5
+            """, (busqueda, busqueda, busqueda, busqueda))
+            resultados = cursor.fetchall()
+            conn.close()
+            if resultados:
+                return resultados  # si hay resultados locales, ya los devolvemos
+
+        # 2️⃣ Buscar en DB nacional del FBI si local no tiene
+        db_fbi = os.path.join(base_dir, 'fbi_national.db')
+        if os.path.exists(db_fbi):
+            conn = sqlite3.connect(db_fbi)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT cpt_code, description, state, zip_code, low_price, high_price
+                FROM fbi_cost_estimates
+                WHERE description LIKE ? OR cpt_code LIKE ?
+                ORDER BY low_price ASC
+                LIMIT 5
+            """, (busqueda, busqueda))
+            resultados_nacional = cursor.fetchall()
+            conn.close()
+            if resultados_nacional:
+                return resultados_nacional
+
+        return "DATO_NO_SQL"  # si no hay en ninguna DB
+
     except Exception as e:
         print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
