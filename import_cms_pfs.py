@@ -16,7 +16,7 @@ c = conn.cursor()
 c.execute("""
 CREATE TABLE IF NOT EXISTS cost_estimates (
     procedure_name TEXT,
-    cpt_code TEXT PRIMARY KEY,
+    cpt_code TEXT,
     state TEXT,
     county TEXT,
     zip_code TEXT,
@@ -25,46 +25,55 @@ CREATE TABLE IF NOT EXISTS cost_estimates (
     low_price_ins REAL,
     high_price_ins REAL,
     notes TEXT,
-    last_updated DATE
+    last_updated DATE,
+    PRIMARY KEY (cpt_code, state, zip_code)
 )
 """)
 conn.commit()
 
 # ==============================
-# 2️⃣ Descargar datos CMS/PFS
+# 2️⃣ URLs CMS oficiales
 # ==============================
-CMS_API_URL = "https://data.cms.gov/resource/m5b5-2h3b.json"
-
-try:
-    print("🔹 Descargando datos CMS/PFS...")
-    response = requests.get(CMS_API_URL)
-    response.raise_for_status()
-    cms_data = response.json()
-except Exception as e:
-    print(f"[ERROR CMS DOWNLOAD] {e}")
-    cms_data = []
+CMS_PFS_URL = "https://data.cms.gov/resource/m5b5-2h3b.json?$limit=50000"   # Médico CPT
+CMS_DENTAL_URL = "https://data.cms.gov/resource/6fea9d79-0129-4e4c-b1b8-23cd86a4f435.json?$limit=50000"  # Dental CDT
 
 # ==============================
-# 3️⃣ Procesar y limpiar datos
+# 3️⃣ Descargar datos
+# ==============================
+def download_json(url):
+    try:
+        print(f"🔹 Descargando datos desde {url} ...")
+        r = requests.get(url)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print(f"[ERROR DOWNLOAD] {url} -> {e}")
+        return []
+
+cms_medical = download_json(CMS_PFS_URL)
+cms_dental = download_json(CMS_DENTAL_URL)
+
+# ==============================
+# 4️⃣ Procesar y limpiar datos
 # ==============================
 rows = []
-for item in cms_data:
+
+# Médicos CPT
+for item in cms_medical:
     try:
         cpt = item.get("hcpcs_code")
-        desc = item.get("short_description") or item.get("long_description") or "Sin descripción"
+        desc = item.get("short_description") or item.get("long_description")
         medicare_price = float(item.get("medicare_payment", 0))
         national_price = float(item.get("national_payment_amount", 0))
+        state = item.get("state") or "US"
+        county = item.get("county") or "All"
+        zip_code = item.get("zip_code") or "00000"
         last_updated = datetime.today().date()
-
-        # Notas y placeholders para ZIP/estado/condado (rellenar luego según ubicación)
-        state = "US"
-        county = "All"
-        zip_code = "00000"
         low_price = medicare_price
         high_price = national_price
         low_price_ins = medicare_price * 0.5
         high_price_ins = national_price * 0.7
-        notes = "Datos oficiales CMS/PFS 2026"
+        notes = "Datos oficiales CMS/PFS Médico 2026"
 
         rows.append((
             desc, cpt, state, county, zip_code,
@@ -72,10 +81,33 @@ for item in cms_data:
             notes, last_updated
         ))
     except Exception as e:
-        print(f"[ERROR PROCESS ITEM] {item} -> {e}")
+        print(f"[ERROR PROCESS CPT] {item} -> {e}")
+
+# Dentales CDT
+for item in cms_dental:
+    try:
+        cdt = item.get("procedure_code")
+        desc = item.get("description") or item.get("short_description")
+        low_price = float(item.get("medicaid_payment", 0))
+        high_price = float(item.get("usual_and_customary", 0))
+        state = item.get("state") or "US"
+        county = item.get("county") or "All"
+        zip_code = item.get("zip_code") or "00000"
+        last_updated = datetime.today().date()
+        low_price_ins = low_price * 0.5
+        high_price_ins = high_price * 0.7
+        notes = "Datos oficiales CMS/PFS Dental 2026"
+
+        rows.append((
+            desc, cdt, state, county, zip_code,
+            low_price, high_price, low_price_ins, high_price_ins,
+            notes, last_updated
+        ))
+    except Exception as e:
+        print(f"[ERROR PROCESS CDT] {item} -> {e}")
 
 # ==============================
-# 4️⃣ Insertar / Actualizar en DB
+# 5️⃣ Insertar / Actualizar en DB
 # ==============================
 for fila in rows:
     try:
@@ -85,7 +117,7 @@ for fila in rows:
             low_price, high_price, low_price_ins, high_price_ins,
             notes, last_updated
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(cpt_code) DO UPDATE SET
+        ON CONFLICT(cpt_code, state, zip_code) DO UPDATE SET
             procedure_name=excluded.procedure_name,
             low_price=excluded.low_price,
             high_price=excluded.high_price,
@@ -99,4 +131,4 @@ for fila in rows:
 
 conn.commit()
 conn.close()
-print(f"✅ Importación CMS/PFS completada. {len(rows)} procedimientos cargados/actualizados.")
+print(f"✅ Importación CMS/PFS completada. {len(rows)} procedimientos médicos y dentales cargados/actualizados en cost_estimates.db.")
