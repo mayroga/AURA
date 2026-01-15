@@ -12,7 +12,7 @@ DB_PATH = os.path.join(BASE_DIR, "cost_estimates.db")
 conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
-# Crear tabla si no existe
+# Crear la tabla (si no existe)
 c.execute("""
 CREATE TABLE IF NOT EXISTS cost_estimates (
     procedure_name TEXT,
@@ -32,14 +32,11 @@ CREATE TABLE IF NOT EXISTS cost_estimates (
 conn.commit()
 
 # ==============================
-# 2️⃣ URLs CMS oficiales
+# 2️⃣ URLs oficiales CMS
 # ==============================
-CMS_PFS_URL = "https://data.cms.gov/resource/m5b5-2h3b.json?$limit=50000"   # Médico CPT
-CMS_DENTAL_URL = "https://data.cms.gov/resource/6fea9d79-0129-4e4c-b1b8-23cd86a4f435.json?$limit=50000"  # Dental CDT
+CMS_PFS_URL = "https://data.cms.gov/resource/m5b5-2h3b.json?$limit=50000"
+CMS_DENTAL_URL = "https://data.cms.gov/resource/6fea9d79-0129-4e4c-b1b8-23cd86a4f435.json?$limit=50000"
 
-# ==============================
-# 3️⃣ Descargar datos
-# ==============================
 def download_json(url):
     try:
         print(f"🔹 Descargando datos desde {url} ...")
@@ -54,7 +51,7 @@ cms_medical = download_json(CMS_PFS_URL)
 cms_dental = download_json(CMS_DENTAL_URL)
 
 # ==============================
-# 4️⃣ Procesar y limpiar datos
+# 3️⃣ Procesar y limpiar datos
 # ==============================
 rows = []
 
@@ -62,7 +59,7 @@ rows = []
 for item in cms_medical:
     try:
         cpt = item.get("hcpcs_code")
-        desc = item.get("short_description") or item.get("long_description")
+        desc = item.get("short_description") or item.get("long_description") or "Sin descripción"
         medicare_price = float(item.get("medicare_payment", 0))
         national_price = float(item.get("national_payment_amount", 0))
         state = item.get("state") or "US"
@@ -87,7 +84,7 @@ for item in cms_medical:
 for item in cms_dental:
     try:
         cdt = item.get("procedure_code")
-        desc = item.get("description") or item.get("short_description")
+        desc = item.get("description") or item.get("short_description") or "Sin descripción"
         low_price = float(item.get("medicaid_payment", 0))
         high_price = float(item.get("usual_and_customary", 0))
         state = item.get("state") or "US"
@@ -107,7 +104,7 @@ for item in cms_dental:
         print(f"[ERROR PROCESS CDT] {item} -> {e}")
 
 # ==============================
-# 5️⃣ Insertar / Actualizar en DB
+# 4️⃣ Insertar / Actualizar en DB
 # ==============================
 for fila in rows:
     try:
@@ -131,4 +128,4 @@ for fila in rows:
 
 conn.commit()
 conn.close()
-print(f"✅ Importación CMS/PFS completada. {len(rows)} procedimientos médicos y dentales cargados/actualizados en cost_estimates.db.")
+print(f"✅ Importación CMS/PFS completada. {len(rows)} registros cargados/actualizados en cost_estimates.db.")
