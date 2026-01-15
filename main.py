@@ -13,7 +13,7 @@ import urllib.parse
 # CARGA DE ENTORNO
 # ===============================
 load_dotenv()
-app = FastAPI()
+app = FastAPI(title="AURA Medical Financial Intelligence")
 
 # ===============================
 # STRIPE & IA
@@ -44,12 +44,12 @@ app.add_middleware(
 # SQL DUAL: LOCAL + NACIONAL
 # ===============================
 def query_sql_dual(termino: str):
-    try:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        busqueda = f"%{termino.strip().upper()}%"
-        data = {"local": [], "nacional": []}
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    busqueda = f"%{termino.strip().upper()}%"
+    data = {"local": [], "nacional": []}
 
-        # ----- LOCAL -----
+    try:
+        # ---------- LOCAL ----------
         db_local = os.path.join(base_dir, "cost_estimates.db")
         if os.path.exists(db_local):
             conn = sqlite3.connect(db_local)
@@ -58,12 +58,13 @@ def query_sql_dual(termino: str):
                 SELECT cpt_code, description, state, city, zip_code, low_price, high_price
                 FROM cost_estimates
                 WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ?
-                ORDER BY low_price ASC LIMIT 5
+                ORDER BY low_price ASC
+                LIMIT 5
             """, (busqueda, busqueda, busqueda))
             data["local"] = cur.fetchall()
             conn.close()
 
-        # ----- NACIONAL -----
+        # ---------- NACIONAL ----------
         db_nat = os.path.join(base_dir, "fbi_national.db")
         if os.path.exists(db_nat):
             conn = sqlite3.connect(db_nat)
@@ -72,7 +73,8 @@ def query_sql_dual(termino: str):
                 SELECT cpt_code, description, state, city, zip_code, low_price, high_price
                 FROM fbi_cost_estimates
                 WHERE description LIKE ? OR cpt_code LIKE ?
-                ORDER BY low_price ASC LIMIT 5
+                ORDER BY low_price ASC
+                LIMIT 5
             """, (busqueda, busqueda))
             data["nacional"] = cur.fetchall()
             conn.close()
@@ -87,12 +89,12 @@ def query_sql_dual(termino: str):
 # ===============================
 def google_maps_links(query: str, zip_user: str = None):
     base = "https://www.google.com/maps/search/"
-    local_q = f"{query} {zip_user}" if zip_user else f"{query} near me"
-    national_q = f"{query} USA"
+    local_query = f"{query} {zip_user}" if zip_user else f"{query} near me"
+    national_query = f"{query} USA"
 
     return {
-        "local_maps": base + urllib.parse.quote(local_q),
-        "national_maps": base + urllib.parse.quote(national_q)
+        "local_maps": base + urllib.parse.quote(local_query),
+        "national_maps": base + urllib.parse.quote(national_query)
     }
 
 # ===============================
@@ -119,32 +121,37 @@ async def estimado(
     datos = query_sql_dual(termino)
     maps = google_maps_links(consulta, zip_user)
 
-    idiomas = {"es": "Español", "en": "English", "ht": "Haitian Creole"}
+    idiomas = {
+        "es": "Español",
+        "en": "English",
+        "ht": "Haitian Creole"
+    }
     idioma = idiomas.get(lang, "Español")
 
     prompt = f"""
 ERES AURA, SISTEMA DE INTELIGENCIA FINANCIERA MÉDICA.
-OPERAS COMO AGENCIA INFORMATIVA INDEPENDIENTE.
+FUNCIONAS COMO PLATAFORMA INFORMATIVA INDEPENDIENTE.
 
 IDIOMA: {idioma}
 CONSULTA: {consulta}
 ZIP USUARIO: {zip_user}
 
-DATOS SQL:
+DATOS PÚBLICOS DISPONIBLES:
 {datos}
 
-REGLAS LEGALES:
+REGLAS LEGALES OBLIGATORIAS:
 - No diagnóstico
-- No recomendaciones médicas
-- Datos públicos y federales
+- No recomendación médica
+- No relación con clínicas
+- Datos públicos, federales y estadísticos
 - Uso educativo e informativo
 
-FORMATO:
+FORMATO OBLIGATORIO:
 1️⃣ BLINDAJE LEGAL CLARO
-2️⃣ OPCIONES LOCALES (Top 3)
-3️⃣ OPCIONES NACIONALES (Top 5)
-4️⃣ PRECIO JUSTO
-5️⃣ AHORRO REAL
+2️⃣ OPCIONES LOCALES (TOP 3)
+3️⃣ OPCIONES NACIONALES (TOP 5)
+4️⃣ PRECIO JUSTO ESTIMADO
+5️⃣ AHORRO REAL POSIBLE
 6️⃣ CASH VS SEGURO
 7️⃣ MENSAJE FINAL DE NEGOCIACIÓN
 """
@@ -165,11 +172,14 @@ FORMATO:
 
     texto += f"""
 
-🔗 VER OPCIONES REALES EN GOOGLE MAPS
-Locales: {maps['local_maps']}
-Nacionales: {maps['national_maps']}
+🔗 OPCIONES REALES EN GOOGLE MAPS
+Locales:
+{maps['local_maps']}
 
-⚠️ AURA NO CONTROLA NI MODIFICA DATOS DE GOOGLE MAPS.
+Nacionales:
+{maps['national_maps']}
+
+⚠️ AURA NO CONTROLA, NO MODIFICA NI GARANTIZA DATOS DE GOOGLE MAPS.
 """
 
     return {"resultado": texto}
@@ -181,6 +191,7 @@ Nacionales: {maps['national_maps']}
 async def checkout(plan: str = Form(...)):
     if plan == "donacion":
         return {"url": LINK_DONACION}
+
     try:
         mode = "subscription" if plan == "special" else "payment"
         session = stripe.checkout.Session.create(
@@ -198,7 +209,10 @@ async def checkout(plan: str = Form(...)):
 # ADMIN
 # ===============================
 @app.post("/login-admin")
-async def login_admin(user: str = Form(...), pw: str = Form(...)):
+async def login_admin(
+    user: str = Form(...),
+    pw: str = Form(...)
+):
     if user == os.getenv("ADMIN_USERNAME") and pw == os.getenv("ADMIN_PASSWORD"):
         return {"status": "success"}
     return JSONResponse(status_code=401, content={"status": "denied"})
