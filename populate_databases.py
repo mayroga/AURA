@@ -3,17 +3,29 @@ import random
 import os
 
 # ==============================
+# RUTA DB
+# ==============================
+DB_FILE = "cost_estimates.db"
+
+# ==============================
+# ELIMINAR DB EXISTENTE (para evitar corrupción)
+# ==============================
+if os.path.exists(DB_FILE):
+    os.remove(DB_FILE)
+    print("🗑️ DB vieja eliminada.")
+
+# ==============================
 # CONEXIÓN DB
 # ==============================
-db_path = "cost_estimates.db"
-conn = sqlite3.connect(db_path)
+conn = sqlite3.connect(DB_FILE)
 c = conn.cursor()
 
 # ==============================
-# CREACIÓN TABLA SI NO EXISTE
+# CREAR TABLA PRINCIPAL
 # ==============================
 c.execute("""
 CREATE TABLE IF NOT EXISTS cost_estimates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     procedure_name TEXT,
     cpt_code TEXT,
     state TEXT,
@@ -26,6 +38,7 @@ CREATE TABLE IF NOT EXISTS cost_estimates (
     notes TEXT
 )
 """)
+print("✅ Tabla cost_estimates creada.")
 
 # ==============================
 # PROCEDIMIENTOS (50+ reales)
@@ -69,14 +82,11 @@ locations = [
     ("NE","Douglas","68102"), ("NV","Clark","89101"), ("NH","Hillsborough","03101"),
     ("NJ","Essex","07102"), ("NM","Bernalillo","87102"), ("NY","New York","10022"),
     ("NC","Mecklenburg","28202"), ("ND","Cass","58102"), ("OH","Franklin","43215"),
-    ("OK","Oklahoma","73102"), ("OR","Multnomah","97204"),
-    ("PA","Philadelphia","19107"), ("RI","Providence","02903"),
-    ("SC","Richland","29201"), ("SD","Minnehaha","57104"),
-    ("TN","Davidson","37203"), ("TX","Harris","77036"),
-    ("UT","Salt Lake","84111"), ("VT","Chittenden","05401"),
-    ("VA","Fairfax","22030"), ("WA","King","98101"),
-    ("WV","Kanawha","25301"), ("WI","Milwaukee","53202"),
-    ("WY","Laramie","82001")
+    ("OK","Oklahoma","73102"), ("OR","Multnomah","97204"), ("PA","Philadelphia","19107"),
+    ("RI","Providence","02903"), ("SC","Richland","29201"), ("SD","Minnehaha","57104"),
+    ("TN","Davidson","37203"), ("TX","Harris","77036"), ("UT","Salt Lake","84111"),
+    ("VT","Chittenden","05401"), ("VA","Fairfax","22030"), ("WA","King","98101"),
+    ("WV","Kanawha","25301"), ("WI","Milwaukee","53202"), ("WY","Laramie","82001")
 ]
 
 # ==============================
@@ -90,7 +100,7 @@ def generate_prices():
     return base, high, ins_low, ins_high
 
 # ==============================
-# INSERCIÓN MASIVA
+# INSERTAR DATOS
 # ==============================
 rows = []
 for state, county, zip_code in locations:
@@ -101,11 +111,20 @@ for state, county, zip_code in locations:
 
 c.executemany("""
 INSERT INTO cost_estimates (
-    procedure_name, cpt_code, state, county, zip_code,
-    low_price, high_price, low_price_ins, high_price_ins, notes
+    procedure_name,
+    cpt_code,
+    state,
+    county,
+    zip_code,
+    low_price,
+    high_price,
+    low_price_ins,
+    high_price_ins,
+    notes
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, rows)
 
 conn.commit()
 conn.close()
-print("✅ DB PRODUCCIÓN LISTA: 50 estados, procedimientos reales, ZIP + condado correctos")
+
+print(f"✅ DB PRODUCCIÓN LISTA: {len(locations)} estados x {len(procedures)} procedimientos = {len(rows)} registros.")
