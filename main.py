@@ -196,3 +196,38 @@ async def login_admin(user: str = Form(...), pw: str = Form(...)):
     if user == ADMIN_USER and pw == ADMIN_PASS:
         return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
+# 9️⃣ Función para poblar la DB con dentist_codes.py
+def populate_dentist_codes():
+    import dentist_codes  # nuestro módulo con todos los códigos
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_local = os.path.join(base_dir, 'cost_estimates.db')
+    conn = sqlite3.connect(db_local)
+    cursor = conn.cursor()
+
+    # Crear tabla si no existe
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cost_estimates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cpt_code TEXT,
+            description TEXT,
+            state TEXT,
+            zip_code TEXT,
+            low_price REAL,
+            high_price REAL
+        )
+    """)
+
+    # Insertar códigos
+    for code in dentist_codes.dentist_codes:
+        cursor.execute("""
+            INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, code)
+
+    conn.commit()
+    conn.close()
+    print("[INFO] Base de datos poblada con códigos de odontología.")
+
+# ⚡ Llamada automática al iniciar main.py (opcional, solo si quieres poblar al inicio)
+# populate_dentist_codes()
