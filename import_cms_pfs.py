@@ -51,10 +51,9 @@ rows = []
 for item in cms_data:
     try:
         cpt = item.get("hcpcs_code")
-        desc = item.get("short_description") or item.get("long_description")
+        desc = item.get("short_description") or item.get("long_description") or "Sin descripción"
         medicare_price = float(item.get("medicare_payment", 0))
         national_price = float(item.get("national_payment_amount", 0))
-        gpci_adjustment = float(item.get("geographic_practice_cost_index", 1))
         last_updated = datetime.today().date()
 
         # Notas y placeholders para ZIP/estado/condado (rellenar luego según ubicación)
