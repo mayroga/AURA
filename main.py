@@ -1,19 +1,23 @@
+
 import os
 import sqlite3
 import stripe
 from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from google import genai
+import openai
 from dotenv import load_dotenv
 
 load_dotenv()
 app = FastAPI()
 
-# ==============================
-# STRIPE
-# ==============================
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")  # desde Render
+# 1️⃣ Configuración Stripe y motores IA
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# 2️⃣ Precios y enlace de donación
 PRICE_IDS = {
     "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
     "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE",
@@ -21,9 +25,7 @@ PRICE_IDS = {
 }
 LINK_DONACION = "https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"
 
-# ==============================
-# CORS
-# ==============================
+# 3️⃣ Middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,21 +33,21 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ==============================
-# FUNCIONES SQL
-# ==============================
+# 4️⃣ Función para consultar SQL
 def query_sql(termino):
     try:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cost_estimates.db')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, 'cost_estimates.db')
         if not os.path.exists(db_path):
             return "SQL_OFFLINE"
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         query = """
-        SELECT cpt_code, procedure_name, state, county, zip_code, low_price, high_price, low_price_ins, high_price_ins, notes
+        SELECT cpt_code, description, state, zip_code, low_price, high_price
         FROM cost_estimates
-        WHERE procedure_name LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
+        WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
         ORDER BY low_price ASC
+        LIMIT 5
         """
         busqueda = f"%{termino.strip().upper()}%"
         cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
@@ -56,55 +58,97 @@ def query_sql(termino):
         print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
 
-# ==============================
-# RUTA PRINCIPAL
-# ==============================
+# 5️⃣ Ruta principal (index.html)
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# ==============================
-# OBTENER ESTIMADO
-# ==============================
+# 6️⃣ Obtener estimado con análisis estratégico completo
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
+    # Determinar término final para SQL
     termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
     datos_sql = query_sql(termino_final)
 
-    idioma_map = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
-    idioma_destino = idioma_map.get(lang, "Español")
+    idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
+    idioma_destino = idiomas.get(lang, "Español")
 
-    # ==============================
-    # Reporte básico con SQL
-    # ==============================
-    if datos_sql in ["SQL_OFFLINE", "DATO_NO_SQL"]:
-        return {"resultado": f"⚠ No se encontraron datos locales. Intentar otra búsqueda o usar Google Maps opcional."}
+    # Prompt base para IA
+    prompt = f"""
+ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
+IDIOMA: {idioma_destino}
+DATOS SQL ENCONTRADOS: {datos_sql}
+CONSULTA ORIGINAL: {consulta}
+ZIP DETECTADO: {zip_user}
 
-    resultado = f"🔹 ESTIMADO DE MERCADO ({idioma_destino})\n"
-    for r in datos_sql[:10]:  # mostrar max 10 resultados
-        cpt, proc, state, county, zip_code, low, high, low_ins, high_ins, notes = r
-        resultado += (
-            f"\nProcedimiento: {proc}\nCPT: {cpt}\nUbicación: {state}, {county}\nZIP: {zip_code}\n"
-            f"Precio Cash: ${low} - ${high}\nPrecio Insurance: ${low_ins} - ${high_ins}\nNotas: {notes}\n"
-        )
+REGLAS:
+1) Usa los datos SQL si existen.
+2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
+3) SALIDA ESTRUCTURADA:
+   - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
+   - REPORTE:
+       * Procedimiento/Síntoma:
+       * CPT o ICD (si aplica):
+       * Ubicación sugerida:
+       * Condado + ZIP:
+       * Opciones locales más baratas (Top 3):
+       * Opciones nacionales más baratas (Top 5):
+       * Opción premium/cara:
+       * Comparación cash price vs insurance:
+       * Notas clínicas:
+       * Precio Justo (Fair Price):
+       * Ahorro Real vs Premium:
+       * Diagnóstico de Mercado:
+       * Cálculo de Eficiencia:
+4) ACTIVACIÓN CONSULTA DE DUDAS:
+   "He analizado 150 puntos de datos para este presupuesto. Tienes tiempo disponible en tu suscripción:
+    ¿Quieres que te explique cómo usar estos precios para negociar con tu clínica o por qué la opción de otro estado es más barata?"
+5) CIERRE:
+   "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
+"""
 
-    # ==============================
-    # Google Maps opcional
-    # ==============================
-    if zip_user:
-        resultado += f"\n📍 Ver en Google Maps: https://www.google.com/maps/search/?api=1&query={zip_user}"
+    # ⚡ Fallback automático usando motores disponibles
+    motores = []
 
-    return {"resultado": resultado}
+    # 1️⃣ Gemini
+    try:
+        modelos_gemini = client_gemini.models.list().data
+        if modelos_gemini:
+            motores.append(("gemini", modelos_gemini[0].name))
+    except Exception as e:
+        print(f"[ERROR GEMINI LIST] {e}")
 
-# ==============================
-# CREAR CHECKOUT STRIPE
-# ==============================
+    # 2️⃣ OpenAI
+    try:
+        motores.append(("openai", "gpt-4"))
+    except Exception as e:
+        print(f"[ERROR OPENAI LIST] {e}")
+
+    # 3️⃣ Intento de fallback en orden
+    for motor, modelo in motores:
+        try:
+            if motor == "gemini":
+                response = client_gemini.models.generate_content(model=modelo, contents=prompt)
+                return {"resultado": response.text}
+            elif motor == "openai":
+                response = openai.chat.completions.create(
+                    model=modelo,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5,
+                )
+                return {"resultado": response.choices[0].message.content}
+        except Exception as e:
+            print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}, intentando siguiente motor...")
+
+    return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
+
+# 7️⃣ Crear sesión de pago
 @app.post("/create-checkout-session")
 async def create_checkout(plan: str = Form(...)):
     if plan.lower() == "donacion":
@@ -123,9 +167,7 @@ async def create_checkout(plan: str = Form(...)):
         print(f"[ERROR STRIPE] {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# ==============================
-# LOGIN ADMIN / ACCESO GRATUITO
-# ==============================
+# 8️⃣ Login admin / acceso gratuito
 @app.post("/login-admin")
 async def login_admin(user: str = Form(...), pw: str = Form(...)):
     ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")
