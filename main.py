@@ -45,11 +45,11 @@ def query_sql(termino):
             conn = sqlite3.connect(db_local)
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT cpt_code, description, state, zip_code, low_price, high_price
+                SELECT cpt_code, description, state, city, zip_code, low_price, high_price
                 FROM cost_estimates
                 WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
                 ORDER BY low_price ASC
-                LIMIT 5
+                LIMIT 10
             """, (busqueda, busqueda, busqueda, busqueda))
             resultados = cursor.fetchall()
             conn.close()
@@ -62,11 +62,11 @@ def query_sql(termino):
             conn = sqlite3.connect(db_fbi)
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT cpt_code, description, state, zip_code, low_price, high_price
+                SELECT cpt_code, description, state, city, zip_code, low_price, high_price
                 FROM fbi_cost_estimates
                 WHERE description LIKE ? OR cpt_code LIKE ?
                 ORDER BY low_price ASC
-                LIMIT 5
+                LIMIT 10
             """, (busqueda, busqueda))
             resultados_nacional = cursor.fetchall()
             conn.close()
@@ -79,14 +79,14 @@ def query_sql(termino):
         print(f"[ERROR SQL] {e}")
         return f"ERROR_SQL: {str(e)}"
 
-# 5️⃣ Ruta principal (index.html)
+# 5️⃣ Ruta principal
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
         return f.read()
 
-# 6️⃣ Obtener estimado
+# 6️⃣ Obtener estimado con enlaces Google Maps
 @app.post("/estimado")
 async def obtener_estimado(
     consulta: str = Form(...),
@@ -99,6 +99,25 @@ async def obtener_estimado(
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
 
+    # Función para crear enlace seguro de búsqueda
+    def link_maps(desc, city, zip_code):
+        return f"https://www.google.com/maps/search/?api=1&query={desc.replace(' ', '+')}+{city}+{zip_code}"
+
+    # Construir opciones locales y nacionales
+    opciones_locales = []
+    opciones_nacionales = []
+
+    if isinstance(datos_sql, list):
+        for i, row in enumerate(datos_sql):
+            cpt, desc, state, city, zip_code, low, high = row
+            link = link_maps(desc, city, zip_code or "")
+            texto = f"{desc} - ${low}-${high} | Buscar: {link}"
+            if i < 3:
+                opciones_locales.append(texto)
+            else:
+                opciones_nacionales.append(texto)
+
+    # Prompt IA
     prompt = f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
 IDIOMA: {idioma_destino}
@@ -108,23 +127,13 @@ ZIP DETECTADO: {zip_user}
 
 REGLAS:
 1) Usa los datos SQL si existen.
-2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
+2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO.
 3) SALIDA ESTRUCTURADA:
    - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
    - REPORTE:
-       * Procedimiento/Síntoma:
-       * CPT o ICD (si aplica):
-       * Ubicación sugerida:
-       * Condado + ZIP:
-       * Opciones locales más baratas (Top 3):
-       * Opciones nacionales más baratas (Top 5):
-       * Opción premium/cara:
-       * Comparación cash price vs insurance:
-       * Notas clínicas:
-       * Precio Justo (Fair Price):
-       * Ahorro Real vs Premium:
-       * Diagnóstico de Mercado:
-       * Cálculo de Eficiencia:
+       * Procedimiento/Síntoma: {consulta}
+       * Opciones locales más baratas (Top 3): {opciones_locales}
+       * Opciones nacionales más baratas (Top 5): {opciones_nacionales}
 4) ACTIVACIÓN CONSULTA DE DUDAS:
    "He analizado 150 puntos de datos para este presupuesto. Tienes tiempo disponible en tu suscripción: 
     ¿Quieres que te explique cómo usar estos precios para negociar con tu clínica o por qué la opción de otro estado es más barata?"
@@ -132,8 +141,8 @@ REGLAS:
    "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
 """
 
+    # ⚡ Fallback motores IA
     motores = []
-
     try:
         modelos_gemini = client_gemini.models.list().data
         if modelos_gemini:
@@ -159,7 +168,7 @@ REGLAS:
                 )
                 return {"resultado": response.choices[0].message.content}
         except Exception as e:
-            print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}, intentando siguiente motor...")
+            print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}")
 
     return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
 
@@ -191,36 +200,32 @@ async def login_admin(user: str = Form(...), pw: str = Form(...)):
         return {"status": "success", "access": "full"}
     return JSONResponse(status_code=401, content={"status": "error"})
 
-# 9️⃣ Función opcional para poblar la DB desde dentist_codes.py
+# 9️⃣ Función para poblar la DB con dentist_codes.py
 def populate_dentist_codes():
     import dentist_codes
-
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_local = os.path.join(base_dir, 'cost_estimates.db')
     conn = sqlite3.connect(db_local)
     cursor = conn.cursor()
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cost_estimates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             cpt_code TEXT,
             description TEXT,
             state TEXT,
+            city TEXT,
             zip_code TEXT,
             low_price REAL,
             high_price REAL
         )
     """)
-
     for code in dentist_codes.dentist_codes:
         cursor.execute("""
-            INSERT INTO cost_estimates (cpt_code, description, state, zip_code, low_price, high_price)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO cost_estimates (cpt_code, description, state, city, zip_code, low_price, high_price)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, code)
-
     conn.commit()
     conn.close()
     print("[INFO] Base de datos poblada con códigos de odontología.")
 
-# ⚡ Descomenta si quieres poblar al inicio
-# populate_dentist_codes()
+# populate_dentist_codes()  # ⚡ Ejecutar solo si quieres poblar la DB al inicio
