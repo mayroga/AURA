@@ -1,133 +1,176 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>AURA by May Roga LLC</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSS simple -->
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
-        header { background: #6c63ff; color: white; padding: 1rem; text-align: center; }
-        main { padding: 1rem; max-width: 800px; margin: auto; }
-        input, select, button { padding: 0.5rem; margin: 0.3rem 0; width: 100%; }
-        button { cursor: pointer; background-color: #6c63ff; color: white; border: none; border-radius: 5px; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .btn-group button { flex: 1; }
-        #resultado { margin-top: 1rem; background: #fff; padding: 1rem; border-radius: 5px; box-shadow: 0 0 5px #aaa; white-space: pre-wrap; }
-    </style>
-</head>
-<body>
+import os
+import sqlite3
+import stripe
+from fastapi import FastAPI, Form
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from google import genai
+import openai
+from dotenv import load_dotenv
 
-<header>
-    <h1>AURA - Estimador de Costos Médicos y Dentales</h1>
-    <p>Transparencia financiera en salud | May Roga LLC</p>
-</header>
+load_dotenv()
+app = FastAPI()
 
-<main>
+# 1️⃣ Configuración Stripe y motores IA
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    <!-- Selección de idioma -->
-    <label for="lang">Idioma / Language / Kreyòl:</label>
-    <select id="lang">
-        <option value="es">Español</option>
-        <option value="en">English</option>
-        <option value="ht">Kreyòl (Haitian Creole)</option>
-    </select>
-
-    <!-- Input de búsqueda -->
-    <label for="consulta">Procedimiento o código CPT:</label>
-    <input type="text" id="consulta" placeholder="Ej. Root Canal, D3330">
-
-    <!-- Input ZIP opcional -->
-    <label for="zip_user">ZIP (opcional, para resultados locales):</label>
-    <input type="text" id="zip_user" placeholder="Ej. 33167">
-
-    <!-- Botones principales -->
-    <div class="btn-group">
-        <button onclick="obtenerEstimado('rapido')">Estimado Rápido</button>
-        <button onclick="obtenerEstimado('standard')">Estimado Standard</button>
-        <button onclick="obtenerEstimado('special')">Estimado Especial</button>
-        <button onclick="pagarDonacion()">Donación</button>
-    </div>
-
-    <!-- Botones secundarios -->
-    <div class="btn-group">
-        <button onclick="copiarWhatsApp()">Enviar WhatsApp</button>
-        <button onclick="imprimirReporte()">Imprimir</button>
-        <button onclick="generarPDF()">Descargar PDF</button>
-        <button onclick="borrarCampos()">Borrar</button>
-    </div>
-
-    <!-- Resultado -->
-    <div id="resultado">Aquí se mostrará tu estimado...</div>
-
-</main>
-
-<!-- ===============================
-     JS FUNCIONALIDAD
-=============================== -->
-<script>
-const BASE_URL = "https://aura-iyxa.onrender.com"; // tu main.py desplegado en Render
-
-async function obtenerEstimado(plan) {
-    const consulta = document.getElementById("consulta").value;
-    const zip_user = document.getElementById("zip_user").value;
-    const lang = document.getElementById("lang").value;
-
-    if(!consulta) { alert("Por favor ingresa un procedimiento o CPT."); return; }
-
-    const formData = new FormData();
-    formData.append("consulta", consulta);
-    formData.append("zip_user", zip_user);
-    formData.append("lang", lang);
-
-    const res = await fetch(`${BASE_URL}/estimado`, {
-        method: "POST",
-        body: formData
-    });
-
-    const data = await res.json();
-    document.getElementById("resultado").textContent = data.resultado;
+# 2️⃣ Precios y enlace de donación
+PRICE_IDS = {
+    "rapido": "price_1Snam1BOA5mT4t0PuVhT2ZIq",
+    "standard": "price_1SnaqMBOA5mT4t0PppRG2PuE",
+    "special": "price_1SnatfBOA5mT4t0PZouWzfpw"
 }
+LINK_DONACION = "https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"
 
-// ===============================
-// STRIPE DONACION
-// ===============================
-async function pagarDonacion() {
-    const formData = new FormData();
-    formData.append("plan", "donacion");
-    const res = await fetch(`${BASE_URL}/create-checkout-session`, { method: "POST", body: formData });
-    const data = await res.json();
-    window.open(data.url, "_blank");
-}
+# 3️⃣ Middleware CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-// ===============================
-// BOTONES SECUNDARIOS
-// ===============================
-function copiarWhatsApp() {
-    const txt = document.getElementById("resultado").textContent;
-    const phone = "1234567890"; // tu WhatsApp oficial
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(txt)}`;
-    window.open(url, "_blank");
-}
+# 4️⃣ Función para consultar SQL
+def query_sql(termino):
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, 'cost_estimates.db')
+        if not os.path.exists(db_path):
+            return "SQL_OFFLINE"
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        query = """
+        SELECT cpt_code, description, state, zip_code, low_price, high_price
+        FROM cost_estimates
+        WHERE description LIKE ? OR cpt_code LIKE ? OR zip_code LIKE ? OR state LIKE ?
+        ORDER BY low_price ASC
+        LIMIT 5
+        """
+        busqueda = f"%{termino.strip().upper()}%"
+        cursor.execute(query, (busqueda, busqueda, busqueda, busqueda))
+        results = cursor.fetchall()
+        conn.close()
+        return results if results else "DATO_NO_SQL"
+    except Exception as e:
+        print(f"[ERROR SQL] {e}")
+        return f"ERROR_SQL: {str(e)}"
 
-function imprimirReporte() {
-    const contenido = document.getElementById("resultado").innerHTML;
-    const w = window.open("", "", "width=800,height=600");
-    w.document.write(contenido);
-    w.document.close();
-    w.print();
-}
+# 5️⃣ Ruta principal (index.html)
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(base_dir, "index.html"), "r", encoding="utf-8") as f:
+        return f.read()
 
-function generarPDF() {
-    alert("Función PDF no implementada en este demo, pero se puede integrar con jsPDF.");
-}
+# 6️⃣ Obtener estimado con análisis estratégico completo
+@app.post("/estimado")
+async def obtener_estimado(
+    consulta: str = Form(...),
+    lang: str = Form("es"),
+    zip_user: str = Form(None)
+):
+    # Determinar término final para SQL
+    termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
+    datos_sql = query_sql(termino_final)
 
-function borrarCampos() {
-    document.getElementById("consulta").value = "";
-    document.getElementById("zip_user").value = "";
-    document.getElementById("resultado").textContent = "Aquí se mostrará tu estimado...";
-}
-</script>
+    idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
+    idioma_destino = idiomas.get(lang, "Español")
 
-</body>
-</html>
+    # Prompt base para IA
+    prompt = f"""
+ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC. SOLO PROPORCIONAS ESTIMADOS DE MERCADO.
+IDIOMA: {idioma_destino}
+DATOS SQL ENCONTRADOS: {datos_sql}
+CONSULTA ORIGINAL: {consulta}
+ZIP DETECTADO: {zip_user}
+
+REGLAS:
+1) Usa los datos SQL si existen.
+2) Si no hay datos exactos, genera un RANGO NACIONAL ESTIMADO basado en mercado USA 2026.
+3) SALIDA ESTRUCTURADA:
+   - BLINDAJE: "Este reporte es emitido por Aura by May Roga LLC, agencia de información independiente. No somos médicos, ni seguros, ni damos diagnósticos."
+   - REPORTE:
+       * Procedimiento/Síntoma:
+       * CPT o ICD (si aplica):
+       * Ubicación sugerida:
+       * Condado + ZIP:
+       * Opciones locales más baratas (Top 3):
+       * Opciones nacionales más baratas (Top 5):
+       * Opción premium/cara:
+       * Comparación cash price vs insurance:
+       * Notas clínicas:
+       * Precio Justo (Fair Price):
+       * Ahorro Real vs Premium:
+       * Diagnóstico de Mercado:
+       * Cálculo de Eficiencia:
+4) ACTIVACIÓN CONSULTA DE DUDAS:
+   "He analizado 150 puntos de datos para este presupuesto. Tienes tiempo disponible en tu suscripción:
+    ¿Quieres que te explique cómo usar estos precios para negociar con tu clínica o por qué la opción de otro estado es más barata?"
+5) CIERRE:
+   "Estos son estimados de mercado basados en datos SQL locales e inteligencia comparativa nacional. Aura by Maroga LLC no es un proveedor médico ni aseguradora; somos tu radar de transparencia financiera en salud. No damos consejos médicos, damos poder de ahorro."
+"""
+
+    # ⚡ Fallback automático usando motores disponibles
+    motores = []
+
+    # 1️⃣ Gemini
+    try:
+        modelos_gemini = client_gemini.models.list().data
+        if modelos_gemini:
+            motores.append(("gemini", modelos_gemini[0].name))
+    except Exception as e:
+        print(f"[ERROR GEMINI LIST] {e}")
+
+    # 2️⃣ OpenAI
+    try:
+        motores.append(("openai", "gpt-4"))
+    except Exception as e:
+        print(f"[ERROR OPENAI LIST] {e}")
+
+    # 3️⃣ Intento de fallback en orden
+    for motor, modelo in motores:
+        try:
+            if motor == "gemini":
+                response = client_gemini.models.generate_content(model=modelo, contents=prompt)
+                return {"resultado": response.text}
+            elif motor == "openai":
+                response = openai.chat.completions.create(
+                    model=modelo,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5,
+                )
+                return {"resultado": response.choices[0].message.content}
+        except Exception as e:
+            print(f"[ERROR {motor.upper()} con modelo {modelo}] {e}, intentando siguiente motor...")
+
+    return {"resultado": "Estimado generado automáticamente sin datos exactos SQL."}
+
+# 7️⃣ Crear sesión de pago
+@app.post("/create-checkout-session")
+async def create_checkout(plan: str = Form(...)):
+    if plan.lower() == "donacion":
+        return {"url": LINK_DONACION}
+    try:
+        mode = "subscription" if plan.lower() == "special" else "payment"
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": PRICE_IDS[plan.lower()], "quantity": 1}],
+            mode=mode,
+            success_url="https://aura-iyxa.onrender.com/?success=true",
+            cancel_url="https://aura-iyxa.onrender.com/"
+        )
+        return {"url": session.url}
+    except Exception as e:
+        print(f"[ERROR STRIPE] {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+# 8️⃣ Login admin / acceso gratuito
+@app.post("/login-admin")
+async def login_admin(user: str = Form(...), pw: str = Form(...)):
+    ADMIN_USER = os.getenv("ADMIN_USERNAME", "TU_USERNAME")
+    ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "TU_PASSWORD")
+    if user == ADMIN_USER and pw == ADMIN_PASS:
+        return {"status": "success", "access": "full"}
+    return JSONResponse(status_code=401, content={"status": "error"})
