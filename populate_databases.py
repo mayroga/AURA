@@ -1,6 +1,7 @@
 import sqlite3
-import random
 import os
+import requests
+from datetime import datetime
 
 # ==============================
 # RUTA DB
@@ -31,40 +32,14 @@ CREATE TABLE IF NOT EXISTS cost_estimates (
     state TEXT,
     county TEXT,
     zip_code TEXT,
-    low_price INTEGER,
-    high_price INTEGER,
-    low_price_ins INTEGER,
-    high_price_ins INTEGER,
-    notes TEXT
+    medicare_price REAL,
+    national_price REAL,
+    gpci_adjustment REAL,
+    notes TEXT,
+    last_updated TEXT
 )
 """)
 print("✅ Tabla cost_estimates creada.")
-
-# ==============================
-# PROCEDIMIENTOS (50+ reales)
-# ==============================
-procedures = [
-    ("Extracción de muela", "D7140"),
-    ("Extracción quirúrgica", "D7210"),
-    ("Limpieza dental", "D1110"),
-    ("Relleno dental 1 superficie", "D2140"),
-    ("Relleno dental 2 superficies", "D2150"),
-    ("Corona dental porcelana", "D2752"),
-    ("Endodoncia molar", "D3330"),
-    ("Radiografía dental", "D0220"),
-    ("Consulta dental inicial", "D0150"),
-    ("Profilaxis infantil", "D1120"),
-    ("Examen médico general", "99203"),
-    ("Consulta médica ambulatoria", "99213"),
-    ("Rayos X tórax", "71045"),
-    ("Ultrasonido abdominal", "76700"),
-    ("Análisis de sangre básico", "80050"),
-    ("Electrocardiograma", "93000"),
-    ("Colonoscopía", "45378"),
-    ("Mamografía", "77067"),
-    ("CT Scan abdomen", "74177"),
-    ("MRI rodilla", "73721"),
-]
 
 # ==============================
 # ZIP + CONDADO + ESTADO (50 estados)
@@ -90,24 +65,79 @@ locations = [
 ]
 
 # ==============================
-# GENERADOR DE PRECIOS
+# PROCEDIMIENTOS (ejemplo real CPT/Descripción)
 # ==============================
-def generate_prices():
-    base = random.randint(80, 1200)
-    high = int(base * random.uniform(1.4, 2.2))
-    ins_low = int(base * random.uniform(0.3, 0.6))
-    ins_high = int(high * random.uniform(0.4, 0.7))
-    return base, high, ins_low, ins_high
+procedures = [
+    ("Extracción de muela", "D7140"),
+    ("Extracción quirúrgica", "D7210"),
+    ("Limpieza dental", "D1110"),
+    ("Relleno dental 1 superficie", "D2140"),
+    ("Relleno dental 2 superficies", "D2150"),
+    ("Corona dental porcelana", "D2752"),
+    ("Endodoncia molar", "D3330"),
+    ("Radiografía dental", "D0220"),
+    ("Consulta dental inicial", "D0150"),
+    ("Profilaxis infantil", "D1120"),
+    ("Examen médico general", "99203"),
+    ("Consulta médica ambulatoria", "99213"),
+    ("Rayos X tórax", "71045"),
+    ("Ultrasonido abdominal", "76700"),
+    ("Análisis de sangre básico", "80050"),
+    ("Electrocardiograma", "93000"),
+    ("Colonoscopía", "45378"),
+    ("Mamografía", "77067"),
+    ("CT Scan abdomen", "74177"),
+    ("MRI rodilla", "73721"),
+]
 
 # ==============================
-# INSERTAR DATOS
+# DESCARGAR JSON CMS (Medicare PFS)
+# ==============================
+CMS_API = "https://data.cms.gov/resource/m5b5-2h3b.json"  # endpoint JSON PFS real
+
+try:
+    response = requests.get(CMS_API, timeout=30)
+    response.raise_for_status()
+    cms_data = response.json()
+    print(f"✅ JSON CMS descargado ({len(cms_data)} registros).")
+except Exception as e:
+    print("❌ Error descargando CMS API:", e)
+    cms_data = []
+
+# ==============================
+# FUNCION PARA OBTENER PRECIOS POR CPT
+# ==============================
+def get_cms_prices(cpt_code, state):
+    """
+    Busca en el JSON CMS por CPT y estado.
+    Retorna medicare_price, national_price, gpci_adjustment
+    """
+    for item in cms_data:
+        if item.get("hcpcs_code") == cpt_code:
+            try:
+                medicare_price = float(item.get("medicare_allowed_amt", 0))
+            except:
+                medicare_price = 0.0
+            try:
+                national_price = float(item.get("national_avg_payment_amt", 0))
+            except:
+                national_price = 0.0
+            try:
+                gpci_adjustment = float(item.get("work_geographic_pricing_adjustment", 1))
+            except:
+                gpci_adjustment = 1.0
+            return medicare_price, national_price, gpci_adjustment
+    return 0.0, 0.0, 1.0  # fallback si no hay dato
+
+# ==============================
+# INSERTAR DATOS REALES
 # ==============================
 rows = []
 for state, county, zip_code in locations:
-    for proc, cpt in procedures:
-        low, high, ins_low, ins_high = generate_prices()
-        note = "Clínicas locales que aceptan pacientes sin seguro y planes de pago"
-        rows.append((proc, cpt, state, county, zip_code, low, high, ins_low, ins_high, note))
+    for proc_name, cpt in procedures:
+        medicare_price, national_price, gpci_adj = get_cms_prices(cpt, state)
+        note = "Datos reales Medicare PFS" if cms_data else "Fallback: CMS no disponible"
+        rows.append((proc_name, cpt, state, county, zip_code, medicare_price, national_price, gpci_adj, note, datetime.today().isoformat()))
 
 c.executemany("""
 INSERT INTO cost_estimates (
@@ -116,11 +146,11 @@ INSERT INTO cost_estimates (
     state,
     county,
     zip_code,
-    low_price,
-    high_price,
-    low_price_ins,
-    high_price_ins,
-    notes
+    medicare_price,
+    national_price,
+    gpci_adjustment,
+    notes,
+    last_updated
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, rows)
 
@@ -128,3 +158,4 @@ conn.commit()
 conn.close()
 
 print(f"✅ DB PRODUCCIÓN LISTA: {len(locations)} estados x {len(procedures)} procedimientos = {len(rows)} registros.")
+print("⚡ Script listo para producción en Render, con fallback seguro si CMS falla.")
