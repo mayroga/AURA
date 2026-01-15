@@ -15,7 +15,9 @@ app = FastAPI()
 # 1️⃣ Configuración Stripe y motores IA
 # ==============================
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client_gemini = None
+if os.getenv("GEMINI_API_KEY"):
+    client_gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ==============================
@@ -78,11 +80,6 @@ async def read_index():
 # 6️⃣ Cálculo Fair Price matemático + validación legal
 # ==============================
 def calcular_fair_price(datos_sql):
-    """
-    Calcula el Fair Price matemáticamente:
-    Fórmula simple auditada:
-    FP = (promedio_low + promedio_high)/2 ajustado por insurance coverage
-    """
     if not datos_sql or datos_sql in ["SQL_OFFLINE", "DATO_NO_SQL"]:
         return None
 
@@ -90,6 +87,8 @@ def calcular_fair_price(datos_sql):
     count = 0
 
     for fila in datos_sql:
+        if len(fila) != 9:
+            continue  # evita error de unpacking
         _, _, _, _, low, high, ins_low, ins_high, _ = fila
         total_low += low
         total_high += high
@@ -105,7 +104,6 @@ def calcular_fair_price(datos_sql):
     avg_ins_low = total_ins_low / count
     avg_ins_high = total_ins_high / count
 
-    # Cálculo Fair Price: promedio mercado + ajuste seguro
     fair_price = round((avg_low + avg_high + avg_ins_low + avg_ins_high)/4, 2)
     return fair_price
 
@@ -115,22 +113,15 @@ async def obtener_estimado(
     lang: str = Form("es"),
     zip_user: str = Form(None)
 ):
-    # Determinar término final para SQL
     termino_final = zip_user if (zip_user and len(consulta.strip()) < 5) else consulta
     datos_sql = query_sql(termino_final)
 
     idiomas = {"es": "Español", "en": "English", "ht": "Kreyòl (Haitian Creole)"}
     idioma_destino = idiomas.get(lang, "Español")
 
-    # ==============================
-    # Calcular Fair Price matemáticamente
-    # ==============================
     fair_price = calcular_fair_price(datos_sql)
     fair_price_txt = f"${fair_price}" if fair_price else "Estimado no disponible"
 
-    # ==============================
-    # Prompt legal para IA fallback (solo si SQL falla)
-    # ==============================
     prompt = f"""
 ERES AURA, MOTOR FINANCIERO MÉDICO DE MAY ROGA LLC.
 SOLO PROPORCIONAS ESTIMADOS DE MERCADO, NUNCA DIAGNÓSTICOS NI RECOMENDACIONES MÉDICAS.
@@ -150,31 +141,36 @@ Fair Price calculado matemáticamente: {fair_price_txt}
 
     # ⚡ Fallback IA solo si SQL falla
     if datos_sql in ["SQL_OFFLINE", "DATO_NO_SQL"]:
-        motores = []
-        try:
-            modelos_gemini = client_gemini.models.list().data
-            if modelos_gemini:
-                motores.append(("gemini", modelos_gemini[0].name))
-        except: pass
-        try:
-            motores.append(("openai", "gpt-4"))
-        except: pass
-
-        for motor, modelo in motores:
+        # intentamos usar cualquier motor disponible
+        respuesta = None
+        # Primero Gemini si está activo
+        if client_gemini:
             try:
-                if motor == "gemini":
-                    response = client_gemini.models.generate_content(model=modelo, contents=prompt)
-                    return {"resultado": response.text}
-                elif motor == "openai":
-                    response = openai.chat.completions.create(
-                        model=modelo,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=0.5,
-                    )
-                    return {"resultado": response.choices[0].message.content}
-            except: pass
+                # obtener cualquier modelo disponible
+                modelos = client_gemini.models.list()
+                for modelo in modelos:  # recorrer todos los modelos disponibles
+                    try:
+                        resp = client_gemini.models.generate_content(model=modelo, contents=prompt)
+                        respuesta = resp.text
+                        break
+                    except: 
+                        continue
+            except:
+                pass
 
-        return {"resultado": "Estimado generado sin datos exactos SQL, Fair Price no disponible."}
+        # Si no Gemini, usar OpenAI
+        if not respuesta:
+            try:
+                resp = openai.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5,
+                )
+                respuesta = resp.choices[0].message.content
+            except:
+                respuesta = "Estimado generado sin datos exactos SQL, Fair Price no disponible."
+
+        return {"resultado": respuesta}
 
     # ==============================
     # Construir reporte final
