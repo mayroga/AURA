@@ -1,175 +1,206 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA by May Roga LLC</title>
-<style>
-body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; }
-.marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 15px 0; }
-.marquee-content { display: inline-block; animation: scroll 35s linear infinite; color: #00d4ff; font-weight: 900; font-size: 1.2rem; }
-@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.container { max-width: 900px; margin: auto; padding: 25px; border: 3px solid #00d4ff; border-radius: 40px; background: #080808; margin-top: 10px; }
-.yellow { color: #ffff00; font-weight: bold; font-size: 1.5rem; }
-.search-hero { font-size: 1.3rem; color: #00d4ff; font-weight: bold; margin: 20px 0; border: 1px dashed #00d4ff; padding: 20px; border-radius: 20px; line-height: 1.5; }
-.plan-card { border: 2px solid #00d4ff; border-radius: 20px; padding: 15px; margin: 10px; display: inline-block; width: 28%; vertical-align: top; background: #0a0a0a; }
-.btn-pay { background: #00d4ff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; transition: 0.3s; }
-input { padding: 18px; border-radius: 15px; border: 2px solid #00d4ff; background: #000; color: #fff; margin: 10px; font-size: 1.2rem; width: 100%; box-sizing: border-box; }
-.res-box { text-align: left; padding: 25px; border: 1px dashed #00d4ff; background: #050505; margin-top: 25px; font-size: 1.1rem; line-height: 1.6; white-space: pre-wrap; display: none; }
-.donacion-box { border: 5px solid #ffff00; border-radius: 35px; padding: 30px; margin-top: 40px; }
-.btn-donar { background: #ffff00; color: #000; border: none; padding: 20px; border-radius: 15px; font-weight: 900; width: 100%; cursor: pointer; font-size: 1.6rem; }
-.btn-ex { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
-.clear-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #333; color: #00d4ff; border: 1px solid #00d4ff; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; }
-#geo-txt { color: #ffff00; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold; }
-.login-box { margin: 20px auto; padding: 20px; border: 2px solid #00d4ff; border-radius: 25px; max-width: 400px; background: #0a0a0a; }
-.login-box input { width: 80%; margin: 10px auto; display: block; }
-.login-box button { width: 85%; }
-.lang-box { margin-bottom: 20px; }
-</style>
-</head>
-<body>
+import os
+from fastapi import FastAPI, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+import pandas as pd
+import requests
+import io
+from datetime import date
 
-<div class="marquee">
-  <div class="marquee-content" id="marquee-text">
-    🛡️ AURA BY MAY ROGA LLC: ESTIMADOS DE PRECIOS MÉDICOS PARA CONSUMIDORES • TRANSPARENCIA TOTAL • NO SOMOS MÉDICOS NI ASEGURADORAS • SOLO INFORMACIÓN DE MERCADO •
-  </div>
-</div>
+# =======================
+# CARGAR VARIABLES DE ENTORNO
+# =======================
+load_dotenv()
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_PORT = int(os.getenv("DB_PORT", 5432))
 
-<div class="container">
-  <h1 style="color: #00d4ff; font-size: 4rem; margin: 0;" id="title-aura">AURA</h1>
-  <div class="yellow" id="subtitle-aura">by May Roga LLC</div>
+# =======================
+# CONFIGURAR FASTAPI
+# =======================
+app = FastAPI(title="Aura Verdict API", version="1.0")
 
-  <div class="search-hero" id="search-hero">
-    CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.<br>
-    Introduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado y precio justo.
-  </div>
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-  <div class="lang-box">
-    <button class="btn-ex" style="background:#00d4ff; color:#000;" onclick="changeLang('es')">ES</button>
-    <button class="btn-ex" style="background:#fff; color:#000;" onclick="changeLang('en')">EN</button>
-    <button class="btn-ex" style="background:#ff4d4d; color:#000;" onclick="changeLang('ht')">CREOL</button>
-  </div>
+# =======================
+# CONEXIÓN DB
+# =======================
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=DB_PORT,
+            cursor_factory=RealDictCursor
+        )
+        return conn
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB connection failed: {e}")
 
-  <div class="login-box">
-    <input type="text" id="admin-user" placeholder="Usuario Admin (Opcional)">
-    <input type="password" id="admin-pass" placeholder="Contraseña Admin">
-    <button class="btn-pay" onclick="loginAdmin()" id="login-btn">ACCEDER GRATIS</button>
-  </div>
-
-  <div id="paywall">
-    <div class="plan-card"><h4>C. RÁPIDA</h4><p>$5.99</p><button class="btn-pay" onclick="pagar('rapido')">PAGAR ACCESO</button></div>
-    <div class="plan-card"><h4>STANDARD</h4><p>$9.99</p><button class="btn-pay" onclick="pagar('standard')">PAGAR ACCESO</button></div>
-    <div class="plan-card"><h4>ESPECIAL</h4><p>$19.99</p><button class="btn-pay" onclick="pagar('special')">PAGAR ACCESO</button></div>
-  </div>
-
-  <div id="sistema-aura" style="display:none;">
-    <div id="geo-txt">📍 Detectando ubicación para precisión...</div>
-    <input type="text" id="q" placeholder="Procedimiento, síntoma o código (ej: MRI, D2750)">
-    <button class="clear-btn" onclick="document.getElementById('q').value=''">✖ BORRAR</button>
-    <button class="btn-pay" onclick="getEstimate()" style="margin-top:20px; width:85%;">REVELAR ESTIMADO DE PRECIO</button>
-    <div id="res" class="res-box"></div>
-    <div id="export-bar" style="display:none; margin-top:20px;">
-      <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
-      <button class="btn-ex" style="background:#ffff00; color:#000;" onclick="readOut()">🔊 Escuchar</button>
-      <button class="btn-ex" style="background:#ff9500; color:#000;" onclick="exportPDF()">🖨️ PDF / Print</button>
-    </div>
-  </div>
-
-  <div class="donacion-box">
-    <h2 style="color:#ffff00; margin-top:0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-    <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
-  </div>
-</div>
-
-<script>
-// ==========================
-// Funciones JS principales
-// ==========================
-let currentLang = 'es';
-let userZip = null;
-
-function getGeo() {
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      const { latitude, longitude } = pos.coords;
-      try {
-        const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=${currentLang}`);
-        const data = await r.json();
-        userZip = data.postcode || null;
-        document.getElementById('geo-txt').innerText = userZip ? `📍 Ubicación detectada: ZIP ${userZip}` : "📍 Ubicación: USA General";
-      } catch { document.getElementById('geo-txt').innerText = "📍 Ubicación: USA General"; }
-    });
-  } else { document.getElementById('geo-txt').innerText = "📍 Ubicación no disponible"; }
+# =======================
+# FUNCIONES DE INGEST
+# =======================
+DATASETS = {
+    "cpt_pfs": "https://data.cms.gov/data-api/v1/dataset/medicare-physician-fee-schedule.csv",
+    "opps_asc": "https://data.cms.gov/data-api/v1/dataset/opps-asc.csv",
+    "gpci": "https://data.cms.gov/data-api/v1/dataset/medicare-gpci.csv",
+    "percentiles": "https://raw.githubusercontent.com/your-org/cms-percentiles/master/cms_percentiles.csv"
 }
 
-window.onload = () => getGeo();
+def download_csv(url):
+    r = requests.get(url, timeout=120)
+    r.raise_for_status()
+    return pd.read_csv(io.BytesIO(r.content))
 
-// ==========================
-// Cambiar idioma
-// ==========================
-function changeLang(lang){
-  currentLang = lang;
-}
+def ingest_aura_data():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS aura_cpt_benchmarks (
+            cpt TEXT,
+            state CHAR(2),
+            fair_price NUMERIC,
+            national_avg NUMERIC,
+            p85_price NUMERIC,
+            gpci NUMERIC,
+            local_price NUMERIC,
+            updated_at DATE,
+            PRIMARY KEY (cpt, state)
+        );
+    """)
+    conn.commit()
 
-// ==========================
-// Consulta de estimado
-// ==========================
-async function getEstimate() {
-  const q = document.getElementById('q').value.trim();
-  if(!q) return;
-  const fd = new FormData();
-  fd.append("consulta", q);
-  fd.append("lang", currentLang);
-  if(userZip) fd.append("zip_user", userZip);
+    # PFS
+    df_cpt = download_csv(DATASETS["cpt_pfs"])
+    df_cpt = df_cpt.rename(columns={
+        "hcpcs_code": "cpt",
+        "average_submitted_charge_amount": "avg_price",
+        "provider_state": "state"
+    })
+    df_cpt = df_cpt[["cpt","state","avg_price"]].dropna()
+    df_cpt["avg_price"] = df_cpt["avg_price"].astype(float)
 
-  const resDiv = document.getElementById('res');
-  resDiv.style.display='block';
-  resDiv.innerHTML="Aura analizando mercado...";
+    # OPPS / ASC
+    df_opps = download_csv(DATASETS["opps_asc"])
+    df_opps = df_opps.rename(columns={
+        "hcpcs_code": "cpt",
+        "average_submitted_charge_amount": "avg_price",
+        "provider_state": "state"
+    })
+    df_opps = df_opps[["cpt","state","avg_price"]].dropna()
+    df_opps["avg_price"] = df_opps["avg_price"].astype(float)
 
-  try {
-    const r = await fetch("/estimado", {method:"POST", body:fd});
-    const d = await r.json();
-    resDiv.innerText = d.resultado;
-    document.getElementById('export-bar').style.display='block';
-  } catch {
-    resDiv.innerText = "Error de conexión.";
-  }
-}
+    # Combinar
+    df_all = pd.concat([df_cpt, df_opps])
+    df_all = df_all.groupby(["cpt","state"]).agg(
+        fair_price=("avg_price","median"),
+        national_avg=("avg_price","mean")
+    ).reset_index()
 
-// ==========================
-// Login Admin
-// ==========================
-async function loginAdmin(){
-  const user = document.getElementById('admin-user').value.trim();
-  const pw = document.getElementById('admin-pass').value.trim();
-  if(!user || !pw) return alert("Ingresa usuario y contraseña.");
-  const fd = new FormData();
-  fd.append("user", user);
-  fd.append("pw", pw);
-  try {
-    const res = await fetch("/login-admin", {method:"POST", body:fd});
-    if(res.status===200){
-      document.getElementById('paywall').style.display='none';
-      document.getElementById('sistema-aura').style.display='block';
-      alert("Acceso gratuito concedido.");
-    } else { alert("Usuario o contraseña incorrectos."); }
-  } catch { alert("Error de conexión."); }
-}
+    # GPCI
+    df_gpci = download_csv(DATASETS["gpci"])
+    df_all = df_all.merge(df_gpci[["state","gpci"]], on="state", how="left")
+    df_all["local_price"] = df_all["fair_price"] * df_all["gpci"]
 
-// ==========================
-// Funciones PDF / Voz / WhatsApp
-// ==========================
-function readOut(){ const ut = new SpeechSynthesisUtterance(document.getElementById('res').innerText); window.speechSynthesis.speak(ut); }
-function shareWA(){ window.open("https://wa.me/?text="+encodeURIComponent(document.getElementById('res').innerText)); }
-function exportPDF(){ const content = document.getElementById('res').innerText; const myWindow = window.open('', '', 'width=800,height=600'); myWindow.document.write('<pre>'+content+'</pre>'); myWindow.document.close(); myWindow.print(); }
+    # Percentiles P85
+    df_pct = download_csv(DATASETS["percentiles"])
+    df_all = df_all.merge(df_pct[["cpt","state","p85"]].rename(columns={"p85":"p85_price"}), on=["cpt","state"], how="left")
 
-// ==========================
-// Pago Stripe / Donación
-// ==========================
-function pagar(plan){
-  if(plan==='donacion'){ window.location.href="https://buy.stripe.com/donacion"; return; }
-  window.location.href="/create-checkout-session?plan="+plan;
-}
-</script>
-</body>
-</html>
+    # Insert/update DB
+    df_all["updated_at"] = date.today()
+    for _, row in df_all.iterrows():
+        cur.execute("""
+            INSERT INTO aura_cpt_benchmarks
+            (cpt,state,fair_price,national_avg,p85_price,gpci,local_price,updated_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (cpt,state) DO UPDATE SET
+                fair_price = EXCLUDED.fair_price,
+                national_avg = EXCLUDED.national_avg,
+                p85_price = EXCLUDED.p85_price,
+                gpci = EXCLUDED.gpci,
+                local_price = EXCLUDED.local_price,
+                updated_at = EXCLUDED.updated_at
+        """, (
+            row.cpt,row.state,row.fair_price,row.national_avg,row.p85_price,row.gpci,row.local_price,row.updated_at
+        ))
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"✅ INGESTA AURA COMPLETA: {len(df_all)} registros actualizados")
+
+# =======================
+# Ejecutar ingest al iniciar la app
+# =======================
+ingest_aura_data()
+
+# =======================
+# ENDPOINT ESTIMADO
+# =======================
+@app.post("/estimado")
+def estimado(consulta: str = Form(...), lang: str = Form("es"), zip_user: str = Form(None)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cpt_code = consulta.upper()
+
+    # Consulta por ZIP si existe
+    if zip_user:
+        cursor.execute("""
+            SELECT * FROM aura_cpt_benchmarks
+            WHERE cpt=%s AND state=(SELECT state FROM aura_cpt_benchmarks WHERE state=(SELECT state FROM aura_cpt_benchmarks LIMIT 1) LIMIT 1)
+        """, (cpt_code,))
+    else:
+        cursor.execute("""
+            SELECT * FROM aura_cpt_benchmarks
+            WHERE cpt=%s
+        """, (cpt_code,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return JSONResponse({"resultado": lang=="es" and "Código no encontrado" or "Code not found"}, status_code=404)
+
+    resultado = f"""
+CPT: {row['cpt']}
+Estado: {row['state']}
+Precio justo (Mediana CMS): ${row['fair_price']:.2f}
+Precio local ajustado (GPCI): ${row['local_price']:.2f}
+Precio premium (p85 percentil): ${row['p85_price']:.2f}
+Fuente: CMS + GPCI + Percentiles públicos
+Nota legal: Estimado legalmente defendible, datos públicos.
+"""
+    return {"resultado": resultado.strip()}
+
+# =======================
+# LOGIN ADMIN GRATUITO
+# =======================
+@app.post("/login-admin")
+def login_admin(user: str = Form(...), pw: str = Form(...)):
+    if user=="admin" and pw=="aura2026":
+        return {"success": True}
+    else:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
+
+# =======================
+# HEALTH CHECK
+# =======================
+@app.get("/health")
+def health():
+    try:
+        conn = get_db_connection()
+        conn.close()
+        return {"status": "ok"}
+    except:
+        raise HTTPException(status_code=500, detail="DB connection failed")
