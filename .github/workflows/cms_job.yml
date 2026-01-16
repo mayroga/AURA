@@ -1,25 +1,29 @@
-name: CMS Data Sync
+name: Aura Data Refresh
 
 on:
   schedule:
-    - cron: "0 3 1 * *" # Día 1 de cada mes
-  workflow_dispatch: # Permite ejecutarlo manualmente
+    - cron: "0 3 1 * *"
+  workflow_dispatch:
 
 jobs:
-  update-db:
+  refresh-data:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+
       - name: Install Dependencies
         run: pip install pandas psycopg2-binary requests
-      - name: Run Ingest
+
+      - name: Run Master Ingest
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: python ingest_cms.py
+        run: python aura_ingest_final.py
