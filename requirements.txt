@@ -8,3 +8,7 @@ openai
 httpx
 pandas
 requests
+psycopg2-binary          # Conexión PostgreSQL
+numpy                     # Pandas depende de esto y útil para cálculos
+sqlalchemy                # Si quieres usar ORM opcionalmente
+python-dateutil           # Para manejo de fechas robusto
