@@ -1,49 +1,25 @@
-name: CMS Monthly Data Refresh
+name: CMS Data Sync
 
-# 🔹 Se ejecuta automáticamente el día 1 de cada mes a las 03:00 AM UTC
-# 🔹 También se puede ejecutar manualmente
 on:
   schedule:
-    - cron: "0 3 1 * *"
-  workflow_dispatch:
+    - cron: "0 3 1 * *" # Día 1 de cada mes
+  workflow_dispatch: # Permite ejecutarlo manualmente
 
 jobs:
-  cms-update:
+  update-db:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Clonar repo
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2️⃣ Configurar Python
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      # 3️⃣ Instalar dependencias
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      # 4️⃣ Ejecutar python import_public_repos.py
-
-      - name: Run CMS Import Script
-        run: |
-          echo "🔹 Ejecutando import_cms_pfs.py para actualizar cost_estimates.db con datos CMS/PFS reales"
-          python import_cms_pfs.py
-
-      # 5️⃣ Validación legal + commit automático
-      - name: Commit updated database
-        run: |
-          git config user.name "cms-bot"
-          git config user.email "cms-bot@users.noreply.github.com"
-          git add cost_estimates.db
-          git diff --quiet || git commit -m "Automated CMS/PFS data refresh - legally audited"
-          git push
-
-      # 6️⃣ Mensaje final de auditoría
-      - name: Report
-        run: echo "✅ Base de datos cost_estimates.db actualizada automáticamente desde CMS/PFS, auditada y legalmente blindada."
+      - name: Install Dependencies
+        run: pip install pandas psycopg2-binary requests
+      - name: Run Ingest
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: python ingest_cms.py
