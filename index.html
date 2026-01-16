@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA BY MAY ROGA LLC</title>
+<title>AURA by May Roga LLC</title>
 <style>
   body { font-family: 'Segoe UI', Arial; background: #000; color: #fff; margin: 0; text-align: center; }
   .marquee { background: #001a33; border-bottom: 2px solid #00d4ff; overflow: hidden; white-space: nowrap; padding: 15px 0; }
@@ -25,7 +25,6 @@
   .login-box input { width: 80%; margin: 10px auto; display: block; }
   .login-box button { width: 85%; }
   .lang-box { margin-bottom: 20px; }
-  .btn-map { background:#ff4d4d; color:#fff; border:none; padding:12px 20px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px; display:none; }
 </style>
 </head>
 <body>
@@ -38,7 +37,7 @@
 
 <div class="container">
   <h1 style="color: #00d4ff; font-size: 4rem; margin: 0;" id="title-aura">AURA</h1>
-  <div class="yellow" id="subtitle-aura">BY MAY ROGA LLC</div>
+  <div class="yellow" id="subtitle-aura">by May Roga LLC</div>
 
   <div class="search-hero" id="search-hero">
     CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.<br>
@@ -70,8 +69,7 @@
       <input type="text" id="q" placeholder="Procedimiento, síntoma o código (ej: MRI, D2750)">
       <button class="clear-btn" onclick="document.getElementById('q').value=''">✖ BORRAR</button>
     </div>
-    <button class="btn-pay" onclick="getEstimate()" style="font-size:1.8rem; margin-top:20px; width:85%;">REVELAR ESTIMADO DE PRECIO</button>
-    <button class="btn-map" id="btn-map" onclick="openMap()">Abrir en Google Maps</button>
+    <button class="btn-pay" onclick="getEstimate()" id="estimate-btn" style="font-size:1.8rem; margin-top:20px; width:85%;">REVELAR ESTIMADO DE PRECIO</button>
     <div id="res" class="res-box"></div>
     <div id="export-bar" style="display:none; margin-top:20px;">
       <button class="btn-ex" style="background:#25d366;" onclick="shareWA()">WhatsApp 🛡️</button>
@@ -81,8 +79,8 @@
   </div>
 
   <div class="donacion-box">
-    <h2 style="color:#ffff00; margin-top:0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
-    <button class="btn-donar" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
+    <h2 id="donation-title" style="color:#ffff00; margin-top:0;">🤝 FONDO DE SOLIDARIDAD Y EMPLEO</h2>
+    <button class="btn-donar" id="don-btn" onclick="pagar('donacion')">REALIZAR DONACIÓN VOLUNTARIA</button>
   </div>
 </div>
 
@@ -99,21 +97,12 @@ function getGeo() {
         const data = await r.json();
         userZip = data.postcode || null;
         document.getElementById('geo-txt').innerText = userZip ? `📍 Ubicación detectada: ZIP ${userZip}` : "📍 Ubicación: USA General";
-        if(userZip) document.getElementById('btn-map').style.display = 'inline-block';
       } catch {
         document.getElementById('geo-txt').innerText = "📍 Ubicación: USA General";
       }
     });
   } else {
     document.getElementById('geo-txt').innerText = "📍 Ubicación no disponible";
-  }
-}
-
-function openMap(){
-  if(userZip){
-    window.open(`https://www.google.com/maps/search/?api=1&query=${userZip}`, '_blank');
-  } else {
-    alert("ZIP no disponible para abrir en Google Maps.");
   }
 }
 
@@ -125,16 +114,17 @@ window.onload = () => {
   }
 };
 
-// Cambiar idioma
 function changeLang(lang){
   currentLang = lang;
   document.getElementById('q').placeholder = lang==='es' ? "Procedimiento o síntoma..." : lang==='en' ? "Procedure or symptom..." : "Pwosedi oswa sentòm...";
   document.getElementById('search-hero').innerText = lang==='es' ? "CONSULTA ESTIMADOS DE PRECIOS MÉDICOS Y DENTALES EN USA.\nIntroduce procedimiento, síntoma, código o ubicación. Obtén rango de mercado y precio justo." : lang==='en' ? "CHECK ESTIMATED MEDICAL AND DENTAL PRICES IN USA.\nEnter procedure, symptom, code or location. Get market range and fair price." : "Tcheke pri medikal ak dantè estime Ozetazini.\nAntre pwosedi, sentòm, kòd oswa kote. Jwenn ranje mache ak pri jis.";
   document.getElementById('marquee-text').innerText = lang==='es' ? "🛡️ AURA BY MAY ROGA LLC: ESTIMADOS DE PRECIOS MÉDICOS PARA CONSUMIDORES • TRANSPARENCIA TOTAL • NO SOMOS MÉDICOS NI ASEGURADORAS • SOLO INFORMACIÓN DE MERCADO •" : lang==='en' ? "🛡️ AURA BY MAY ROGA LLC: MEDICAL PRICE ESTIMATES FOR CONSUMERS • TOTAL TRANSPARENCY • NOT DOCTORS OR INSURANCE • MARKET INFO ONLY •" : "🛡️ AURA BY MAY ROGA LLC: ESTIME PRI MEDIKAL POU KONSOMATÈ • TRANSPARANS TOTAL • NO SE MEDIKOS OSWA ASIRANS • SÈLMAN ENFÒMASYON SOU MACHE •";
   document.getElementById('login-btn').innerText = lang==='es'? "ACCEDER GRATIS": lang==='en'? "FREE ACCESS":"AKSE GRATIS";
+  document.getElementById('estimate-btn').innerText = lang==='es'? "REVELAR ESTIMADO DE PRECIO": lang==='en'? "SHOW ESTIMATE":"MONTRE PRI";
+  document.getElementById('donation-title').innerText = lang==='es'? "🤝 FONDO DE SOLIDARIDAD Y EMPLEO": lang==='en'? "🤝 SOLIDARITY & EMPLOYMENT FUND":"🤝 FON SYANS & ANPLWA";
+  document.getElementById('don-btn').innerText = lang==='es'? "REALIZAR DONACIÓN VOLUNTARIA": lang==='en'? "MAKE VOLUNTARY DONATION":"FÈ DON VOLONTE";
 }
 
-// Funciones de voz
 function listen(){
   try{
     const rec = new (window.SpeechRecognition||window.webkitSpeechRecognition)();
@@ -146,7 +136,6 @@ function listen(){
   }
 }
 
-// Función estimado
 async function getEstimate() {
   const q = document.getElementById('q').value.trim();
   if(!q && !userZip) return;
@@ -167,7 +156,6 @@ async function getEstimate() {
   }
 }
 
-// PAGO STRIPE
 async function pagar(plan){
   if(plan==='donacion'){ window.location.href="https://buy.stripe.com/28E00igMD8dR00v5vl7Vm0h"; return; }
   const fd = new FormData();
@@ -179,7 +167,6 @@ async function pagar(plan){
   } catch { alert(currentLang==='es'? "Error al conectar con Stripe.":currentLang==='en'? "Error connecting to Stripe.":"Erè konekte ak Stripe."); }
 }
 
-// LOGIN ADMIN / GRATIS
 async function loginAdmin(){
   const user = document.getElementById('admin-user').value.trim();
   const pw = document.getElementById('admin-pass').value.trim();
@@ -197,11 +184,9 @@ async function loginAdmin(){
   } catch { alert(currentLang==='es'? "Error de conexión.":currentLang==='en'? "Connection error.":"Erè koneksyon."); }
 }
 
-// Funciones lectura, PDF, WhatsApp
 function readOut(){ const ut = new SpeechSynthesisUtterance(document.getElementById('res').innerText); ut.lang = currentLang==='es'?'es-US':currentLang==='en'?'en-US':'ht-HT'; window.speechSynthesis.speak(ut); }
 function shareWA(){ window.open("https://wa.me/?text="+encodeURIComponent(document.getElementById('res').innerText)); }
 function exportPDF(){ const content = document.getElementById('res').innerText; const myWindow = window.open('', '', 'width=800,height=600'); myWindow.document.write('<pre style="font-family:Arial; white-space:pre-wrap;">'+content+'</pre>'); myWindow.document.close(); myWindow.print(); }
-
 </script>
 </body>
 </html>
