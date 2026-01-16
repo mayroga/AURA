@@ -5,7 +5,6 @@ import io
 import os
 from datetime import date
 
-# CONFIGURACIÓN UNIFICADA DE DB
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "dbname": os.getenv("DB_NAME"),
@@ -14,69 +13,69 @@ DB_CONFIG = {
     "port": 5432
 }
 
-def get_connection():
-    return psycopg2.connect(**DB_CONFIG)
+def run_ingest():
+    print("🚀 Iniciando Ingesta Maestra para Aura by May Roga LLC")
+    
+    # 1. DESCARGAR CMS PFS
+    print("🔹 Descargando Medicare PFS...")
+    url_pfs = "https://data.cms.gov/data-api/v1/dataset/medicare-physician-fee-schedule.csv"
+    r = requests.get(url_pfs)
+    df = pd.read_csv(io.BytesIO(r.content))
 
-def download_csv(url):
-    print(f"🔹 Descargando: {url}")
-    r = requests.get(url, timeout=120)
-    r.raise_for_status()
-    return pd.read_csv(io.BytesIO(r.content))
+    # Normalizar columnas
+    df = df.rename(columns={
+        "hcpcs_code": "cpt",
+        "average_submitted_charge_amount": "price",
+        "provider_state": "state",
+        "provider_zip_code": "zip"
+    })
+    
+    # Limpieza básica
+    df = df[["cpt", "state", "zip", "price"]].dropna()
+    df["price"] = df["price"].astype(float)
+    df["zip"] = df["zip"].astype(str).str[:5]
 
-def run_total_ingest():
-    conn = get_connection()
+    # Agrupar datos para obtener métricas
+    agg = df.groupby(["cpt", "state", "zip"]).agg(
+        fair_price=("price", "median"),
+        national_avg=("price", "mean"),
+        p85_price=("price", lambda x: x.quantile(0.85))
+    ).reset_index()
+
+    # 2. CONECTAR A POSTGRES
+    conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
-    # 1. CREAR TABLA MAESTRA
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS aura_cpt_benchmarks (
-        cpt TEXT,
-        state CHAR(2),
-        fair_price NUMERIC,
-        national_avg NUMERIC,
-        p85_price NUMERIC,
-        local_price NUMERIC,
-        source TEXT,
-        updated_at DATE,
-        PRIMARY KEY (cpt, state)
-    );
+        CREATE TABLE IF NOT EXISTS aura_cpt_benchmarks (
+            cpt TEXT,
+            state CHAR(2),
+            zip CHAR(5),
+            fair_price NUMERIC,
+            national_avg NUMERIC,
+            p85_price NUMERIC,
+            local_price NUMERIC,
+            updated_at DATE,
+            PRIMARY KEY (cpt, state, zip)
+        );
     """)
 
-    # --- PARTE A: DATOS FEDERALES (CMS) ---
-    print("--- Procesando Datos CMS ---")
-    # (Aquí va tu lógica de PFS + OPPS que ya tenías)
-    # ... Simplificado para el ejemplo:
-    df_cms = download_csv("https://data.cms.gov/data-api/v1/dataset/medicare-physician-fee-schedule.csv")
-    # ... (Tu lógica de filtrado y normalización) ...
-
-    # --- PARTE B: DATOS PÚBLICOS (OWID / CDC) ---
-    print("--- Procesando Repositorios Públicos ---")
-    PUBLIC_REPOS = [
-        "https://raw.githubusercontent.com/owid/health-expenditure-data/master/prices_us_hospital.csv",
-        "https://raw.githubusercontent.com/CDCgov/price-transparency/main/aggregated_prices.csv"
-    ]
-
-    for url in PUBLIC_REPOS:
-        try:
-            df_pub = download_csv(url)
-            df_pub.columns = [c.lower().strip() for c in df_pub.columns]
-            
-            for _, r in df_pub.iterrows():
-                # Adaptamos los datos públicos a nuestra tabla maestra
-                cur.execute("""
-                INSERT INTO aura_cpt_benchmarks (cpt, state, fair_price, source, updated_at)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (cpt, state) DO UPDATE SET
-                    fair_price = EXCLUDED.fair_price,
-                    updated_at = EXCLUDED.updated_at;
-                """, (r.get("code", "N/A"), r.get("state", "US"), r.get("low", 0), "Public Repo", date.today()))
-        except Exception as e:
-            print(f"⚠️ Error en repo {url}: {e}")
+    print(f"🔹 Insertando {len(agg)} registros...")
+    for _, row in agg.iterrows():
+        # Simulamos local_price como fair_price para este ejemplo inicial
+        cur.execute("""
+            INSERT INTO aura_cpt_benchmarks 
+            (cpt, state, zip, fair_price, national_avg, p85_price, local_price, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (cpt, state, zip) DO UPDATE SET
+                fair_price = EXCLUDED.fair_price,
+                updated_at = EXCLUDED.updated_at;
+        """, (row.cpt, row.state, row.zip, row.fair_price, row.national_avg, row.p85_price, row.fair_price, date.today()))
 
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ INGESTA TOTAL COMPLETADA EN POSTGRES")
+    print("✅ Ingesta Completada con Éxito.")
 
 if __name__ == "__main__":
-    run_total_ingest()
+    run_ingest()
